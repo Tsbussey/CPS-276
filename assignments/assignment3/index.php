@@ -26,13 +26,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     <!-- Input field -->
     <div class="mb-3">
-      <label for="fullname" class="form-label">Enter Name:</label>
+      <label for="fullname" class="form-label">Enter Name</label>
       <input type="text" id="fullname" name="fullname" class="form-control">
     </div>
 
     <!-- Textarea with label -->
     <div class="mb-3">
-      <label for="namelist" class="form-label">List of Names:</label>
+      <label for="namelist" class="form-label">List of Names</label>
       <textarea style="height: 500px;" class="form-control" id="namelist" name="namelist"><?php echo $output ?></textarea>
     </div>
   </form>
