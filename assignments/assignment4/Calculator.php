@@ -1,66 +1,77 @@
 <?php
 /*
------------------------------------
-Assignment 4 – PHP Calculator Q&A
------------------------------------
+-----------------------------------------------------------
+Assignment 4 – Calculator Class
+Author: [Your Name]
+Course: CPS 276
+-----------------------------------------------------------
+Q&A
+-----------------------------------------------------------
+1️⃣ Why use require_once "Calculator.php"?
+   ➤ It ensures the Calculator class is loaded only once.
+     Using require or include could load it multiple times,
+     causing redeclaration errors.
 
-1. Why separate index.php and Calculator.php?
-   - index.php handles the form UI, while Calculator.php processes the calculation logic.
-   - This separation follows good modular design practices and makes the code easier to maintain.
+2️⃣ How does divide prevent division by zero?
+   ➤ The calc() method checks if $num2 == 0 before dividing,
+     and returns a descriptive message rather than attempting division.
 
-2. Role of $_SERVER["REQUEST_METHOD"]:
-   - Ensures calculations are only performed when the form is submitted via POST.
-   - Prevents code from running automatically when the page first loads.
+3️⃣ How to add exponentiation (^)?
+   ➤ Add a new case "^" to the switch statement and use pow($num1, $num2).
 
-3. Why validate user input?
-   - Validation ensures that the input fields contain numeric values.
-   - This prevents runtime errors or unexpected results if users enter invalid data.
+4️⃣ Difference between Calculator class and $Calculator object?
+   ➤ The class defines the blueprint; $Calculator is an instance
+     created from that blueprint to use its methods.
 
-4. How switch statements improve readability:
-   - The switch statement allows for cleaner, more organized handling of multiple operations compared to multiple if-else statements.
+5️⃣ Why check that inputs are numbers?
+   ➤ Prevents runtime errors and ensures correct math logic.
 
-5. How error handling is done for division:
-   - Division by zero is checked with a conditional before performing the operation.
-   - If the second number is zero, a custom message “Cannot divide by zero” is returned instead of performing the calculation.
+6️⃣ Why separate index.php (display) from Calculator.php (logic)?
+   ➤ Separating logic and presentation improves maintainability,
+     readability, and scalability.
+-----------------------------------------------------------
 */
 
-function performCalculation() {
-    $num1 = $_POST['num1'] ?? '';
-    $num2 = $_POST['num2'] ?? '';
-    $operator = $_POST['operator'] ?? '';
-    $result = '';
+class Calculator {
 
-    // Input validation
-    if (!is_numeric($num1) || !is_numeric($num2)) {
-        return "Error: Please enter valid numbers for both inputs.";
-    }
+    public function calc($operator = null, $num1 = null, $num2 = null) {
 
-    $num1 = floatval($num1);
-    $num2 = floatval($num2);
+        // Missing arguments
+        if ($operator === null || $num1 === null || $num2 === null) {
+            return "<p>Cannot perform operation. You must have three arguments. A string for the operator (+,-,*,/) and two integers or floats for the numbers.</p>";
+        }
 
-    // Perform calculation
-    switch ($operator) {
-        case 'add':
-            $result = $num1 + $num2;
-            break;
-        case 'subtract':
-            $result = $num1 - $num2;
-            break;
-        case 'multiply':
-            $result = $num1 * $num2;
-            break;
-        case 'divide':
-            if ($num2 == 0) {
-                $result = "Error: Cannot divide by zero.";
-            } else {
+        // Validate numeric inputs
+        if (!is_numeric($num1) || !is_numeric($num2)) {
+            return "<p>Cannot perform operation. You must have three arguments. A string for the operator (+,-,*,/) and two integers or floats for the numbers.</p>";
+        }
+
+        // Convert to float for consistent output
+        $num1 = floatval($num1);
+        $num2 = floatval($num2);
+        $result = null;
+
+        switch ($operator) {
+            case '+':
+                $result = $num1 + $num2;
+                break;
+            case '-':
+                $result = $num1 - $num2;
+                break;
+            case '*':
+                $result = $num1 * $num2;
+                break;
+            case '/':
+                if ($num2 == 0) {
+                    return "<p>The calculation is $num1 / $num2. The answer is cannot divide a number by zero.</p>";
+                }
                 $result = $num1 / $num2;
-            }
-            break;
-        default:
-            $result = "Error: Invalid operation selected.";
-            break;
-    }
+                break;
+            default:
+                return "<p>Cannot perform operation. You must have three arguments. A string for the operator (+,-,*,/) and two integers or floats for the numbers.</p>";
+        }
 
-    // Format output neatly
-    return "Result: " . $result;
+        return "<p>The calculation is $num1 $operator $num2. The answer is $result.</p>";
+    }
 }
+?>
