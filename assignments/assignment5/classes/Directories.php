@@ -1,23 +1,4 @@
 <?php
-/*
------------------------------------------------------------
-Assignment 5 – File Directory Class
-Author: [Your Name]
-Course: CPS 276
------------------------------------------------------------
-Q&A:
-1️⃣ Creating a directory vs file:
-   mkdir() creates folders; fopen()/fwrite() handles files.
-2️⃣ Form submission flow:
-   User fills form → PHP receives POST data → class creates dir + file.
-3️⃣ Why close file handles:
-   fclose() frees memory and ensures data is saved.
-4️⃣ Why permission 0777:
-   Allows read/write/execute for all users in testing environments.
-5️⃣ Benefit of class approach:
-   Code reusability, cleaner separation between logic and output.
------------------------------------------------------------
-*/
 
 class Directories {
     private string $dirname;
@@ -43,7 +24,7 @@ class Directories {
 
         // If directory already exists
         if (is_dir($targetDir)) {
-            return ["The directory already exists.", ""];
+            return ["The directory already exists with that name.", ""];
         }
 
         // Create new directory
