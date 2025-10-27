@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/php/fileUploadProc.php'; // view pulls in proc and echoes $output
+require_once __DIR__ . '/../php/fileUploadProc.php';
 ?><!doctype html>
 <html lang="en">
 <head>

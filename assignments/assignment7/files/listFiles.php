@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/php/listFilesProc.php';
+require_once __DIR__ . '/../php/listFilesProc.php';
 ?><!doctype html>
 <html lang="en">
 <head>
