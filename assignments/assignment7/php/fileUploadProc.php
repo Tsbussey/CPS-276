@@ -1,83 +1,55 @@
 <?php
-declare(strict_types=1);
+$flashMessage = '';
+$flashClass   = 'alert-info';
 
-$output = '';
-require_once __DIR__ . '/../classes/Pdo_methods.php';
+require_once __DIR__ . '/classes/PdoMethods.php';
 
-const MAX_BYTES = 5_000_000; // why: keep uploads reasonable
+if (($_POST['upload'] ?? '') === '1') {
+  try {
+    $fileNameInput = trim((string)($_POST['file_name'] ?? ''));
+    if ($fileNameInput === '') { throw new InvalidArgumentException('Please provide a file name.'); }
 
-function render_form(string $message = ''): string {
-  $msg = $message !== '' ? '<div class="msg">'.$message.'</div>' : '';
-  return $msg . '
-  <form method="post" enctype="multipart/form-data" novalidate>
-    <label for="display_name">File name (label):</label>
-    <input type="text" id="display_name" name="display_name" maxlength="255" required>
-    <label for="pdf_file">PDF file:</label>
-    <input type="file" id="pdf_file" name="pdf_file" accept="application/pdf" required>
-    <button type="submit" name="upload" value="1">Upload</button>
-  </form>';
-}
+    if (!isset($_FILES['pdf']) || $_FILES['pdf']['error'] !== UPLOAD_ERR_OK) {
+      throw new RuntimeException('Upload failed or no file provided.');
+    }
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-  $output = render_form();
-  return;
-}
+    $tmpPath  = $_FILES['pdf']['tmp_name'];
+    $origName = $_FILES['pdf']['name'];
+    $size     = (int)$_FILES['pdf']['size'];
 
-$displayName = trim($_POST['display_name'] ?? '');
-$err = [];
+    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+    $mime  = finfo_file($finfo, $tmpPath);
+    finfo_close($finfo);
+    if ($mime !== 'application/pdf' && !preg_match('/\.pdf$/i', $origName)) {
+      throw new InvalidArgumentException('Only PDF files are allowed.');
+    }
+    if ($size > 5 * 1024 * 1024) { throw new InvalidArgumentException('File too large (max 5MB).'); }
 
-if ($displayName === '') { $err[] = 'Please enter a file name.'; }
+    $filesDir = dirname(__DIR__) . '/files';
+    if (!is_dir($filesDir) && !mkdir($filesDir, 0755, true)) {
+      throw new RuntimeException('Cannot create files directory.');
+    }
+    if (!is_writable($filesDir)) { throw new RuntimeException('Files directory is not writable.'); }
 
-if (!isset($_FILES['pdf_file']) || ($_FILES['pdf_file']['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
-  $err[] = 'Please choose a PDF file.';
-}
+    $diskName = bin2hex(random_bytes(16)) . '.pdf';
+    $destPath = $filesDir . '/' . $diskName;
+    if (!move_uploaded_file($tmpPath, $destPath)) {
+      throw new RuntimeException('Failed to move uploaded file.');
+    }
 
-if (!$err) {
-  $file = $_FILES['pdf_file'];
-  if ($file['error'] !== UPLOAD_ERR_OK) { $err[] = 'Upload failed (code '.$file['error'].').'; }
-  if ($file['size'] <= 0 || $file['size'] > MAX_BYTES) { $err[] = 'File must be >0 and ≤ '.number_format(MAX_BYTES).' bytes.'; }
+    $publicPath = 'files/' . $diskName;
 
-  // strict MIME + extension check (why: stop spoofed files)
-  $finfo = new finfo(FILEINFO_MIME_TYPE);
-  $mime  = $finfo->file($file['tmp_name']);
-  $extOk = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION)) === 'pdf';
-  if ($mime !== 'application/pdf' || !$extOk) { $err[] = 'Only PDF files are allowed.'; }
-}
+    $db  = new PdoMethods(); // now works with your DatabaseConn
+    $sql = 'INSERT INTO documents (file_name, file_path) VALUES (:file_name, :file_path)';
+    $id  = $db->otherBinded($sql, [
+      ':file_name' => $fileNameInput,
+      ':file_path' => $publicPath,
+    ]);
 
-if ($err) {
-  $output = render_form(implode('<br>', $err));
-  return;
-}
-
-$uniq   = bin2hex(random_bytes(8));
-$targetDir = dirname(__DIR__) . '/files';
-if (!is_dir($targetDir)) { mkdir($targetDir, 0775, true); } // ensure dir exists
-$targetRel = 'files/' . $uniq . '.pdf';
-$targetAbs = dirname(__DIR__, 1) . '/' . $targetRel;
-
-if (!move_uploaded_file($_FILES['pdf_file']['tmp_name'], $targetAbs)) {
-  $output = render_form('Could not move uploaded file.');
-  return;
-}
-
-try {
-  $pdo = new PdoMethods();
-  $sql = "INSERT INTO documents (display_name, file_path) VALUES (:display_name, :file_path)";
-  $bindings = [
-    [':display_name', $displayName, 'str'],
-    [':file_path',    $targetRel,   'str'],
-  ];
-  $result = $pdo->otherBinded($sql, $bindings);
-  if ($result === 'error') {
-    @unlink($targetAbs);
-    $output = render_form('Database error while saving record.');
-    return;
+    $flashMessage = 'Upload complete. ID: ' . htmlspecialchars((string)$id);
+    $flashClass   = 'alert-success';
+  } catch (Throwable $e) {
+    $flashMessage = $e->getMessage();
+    $flashClass   = 'alert-danger';
   }
-} catch (Throwable $t) {
-  @unlink($targetAbs);
-  $output = render_form('Unexpected error.');
-  return;
 }
-
-$msg = 'Uploaded ✓ — <a href="'.$targetRel.'" target="_blank" rel="noopener">view file</a>.';
-$output = render_form($msg);
