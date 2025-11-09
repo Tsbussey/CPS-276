@@ -49,4 +49,8 @@ require_once $procDir . '/fileUploadProc.php';
     if (submitBtn) submitBtn.textContent = 'Upload File';
   </script>
 </body>
+<<<<<<< Updated upstream
 </html>
+=======
+</html>
+>>>>>>> Stashed changes

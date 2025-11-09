@@ -1,26 +1,24 @@
 <?php
-declare(strict_types=1);
+require_once __DIR__ . '/bootstrap.php';
 
-$output = '';
-require_once __DIR__ . '/../classes/Pdo_methods.php';
-
+$output = '<div class="card p-3"><ul class="list-group list-group-flush">';
 try {
-  $pdo = new PdoMethods();
-  $rows = $pdo->select("SELECT id, display_name, file_path FROM documents ORDER BY id DESC", []);
-  if ($rows === 'error') {
-    $output = '<p class="empty">Could not retrieve files.</p>';
-    return;
-  }
+  $pdo  = new PdoMethods();
+  $rows = $pdo->selectBinded('SELECT id, file_name, file_path, created_at FROM documents ORDER BY created_at DESC');
+
   if (!$rows) {
-    $output = '<p class="empty">No files uploaded yet.</p>';
-    return;
+    $output .= '<li class="list-group-item">No files uploaded yet.</li>';
+  } else {
+    foreach ($rows as $r) {
+      $name = htmlspecialchars($r['file_name']);
+      $href = htmlspecialchars($r['file_path']);
+      $output .= "<li class='list-group-item d-flex justify-content-between align-items-center'>
+                    <a href='{$href}' target='_blank' rel='noopener noreferrer'>{$name}</a>
+                    <span class='text-muted small'>ID {$r['id']}</span>
+                  </li>";
+    }
   }
-  $lis = array_map(function($r){
-    $name = htmlspecialchars($r['display_name'], ENT_QUOTES, 'UTF-8');
-    $href = htmlspecialchars($r['file_path'], ENT_QUOTES, 'UTF-8');
-    return '<li><a href="'.$href.'" target="_blank" rel="noopener">'.$name.'</a></li>';
-  }, $rows);
-  $output = '<ul>'.implode('', $lis).'</ul>';
-} catch (Throwable $t) {
-  $output = '<p class="empty">Unexpected error.</p>';
+} catch (Throwable $e) {
+  $output .= '<li class="list-group-item text-danger">' . htmlspecialchars($e->getMessage()) . '</li>';
 }
+$output .= '</ul></div>';
