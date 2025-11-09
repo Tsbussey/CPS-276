@@ -1,36 +1,33 @@
 <?php
 
-namespace App\Classes;
-
-use PDO;
-use PDOException;
-
 class Db_conn {
+  protected $DB_HOST = 'localhost';
+  protected $DB_NAME = 'tabussey';
+  protected $DB_USER = 'tabussey';
+  protected $DB_PASS =  'ubfT2R5HYPHsVfY';
+  protected $DB_CHARSET = 'utf8mb4';
 
-  private const DB_HOST = 'localhost';
-  private const DB_NAME = 'tabussey'
-  private const DB_USER = 'tabussey'
-  private const DB_PASS = 'ubfT2R5HYPHsVfY'
-  private const DB_CHARSET = 'utf8mb4';
-
-  protected function dbOpen(): PDO {
-    $dsn = "mysql:host=" . self::DB_HOST . ";dbname=" . self::DB_NAME . ";charset=" . self::DB_CHARSET;
-    $options = [
+  protected function dbOpen() {
+    $dsn = "mysql:host={$this->DB_HOST};dbname={$this->DB_NAME};charset={$this->DB_CHARSET}";
+    $options = array(
       PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
       PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
       PDO::ATTR_EMULATE_PREPARES => false,
-    ];
+    );
     try {
-      return new PDO($dsn, self::DB_USER, self::DB_PASS, $options);
-    } catch (PDOException $e) {
-
+      return new PDO($dsn, $this->DB_USER, $this->DB_PASS, $options);
+    } catch (Exception $e) {
       error_log("DB connection failed: " . $e->getMessage());
-      throw new PDOException("Database connection failed.");
+      die("Database connection failed.");
     }
   }
 
-  protected function dbClose(?PDO &$pdo = null, ?\PDOStatement &$stmt = null): void {
+  protected function dbClose(&$pdo = null, &$stmt = null) {
     $stmt = null;
     $pdo = null;
   }
 }
+
+    $dbName = 'tabussey';
+        $dbUser = 'tabussey';
+        $dbPass = 'ubfT2R5HYPHsVfY';

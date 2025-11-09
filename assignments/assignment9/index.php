@@ -1,9 +1,5 @@
 <?php
-
-declare(strict_types=1);
-
-use App\Classes\StickyForm;
-use App\Classes\Pdo_methods;
+// index.php — 2-row horizontal form layout, no title, prefilled pw on first load
 
 require_once __DIR__ . '/classes/Db_conn.php';
 require_once __DIR__ . '/classes/Pdo_methods.php';
@@ -14,31 +10,33 @@ $form = new StickyForm();
 $pdo  = new Pdo_methods();
 $pdo->createUsersTableIfMissing();
 
+$isPost = isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST';
 
-$form->setDefaultValues([
-  'first_name' => 'Ava',
-  'last_name'  => "O'Brien",
-  'email'      => 'ava.test@example.com',
-  'password'   => 'Test@1234',
-  'confirm'    => 'Test@1234',
-]);
+/** Defaults shown on first load */
+$form->setDefaultValues(array(
+  'first_name' => 'Scott',
+  'last_name'  => 'Shaper',
+  'email'      => 'sshaper@wccnet.edu',
+  'password'   => 'Pass$or1',
+  'confirm'    => 'Pass$or1',
+));
 
-$rows = [];
+$rows = array();
 $success = false;
 
-if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+if ($isPost) {
   $form->resetErrors();
 
-  $first = trim($_POST['first_name'] ?? '');
-  $last  = trim($_POST['last_name'] ?? '');
-  $email = trim($_POST['email'] ?? '');
-  $pwd   = (string)($_POST['password'] ?? '');
-  $conf  = (string)($_POST['confirm'] ?? '');
+  $first = isset($_POST['first_name']) ? trim($_POST['first_name']) : '';
+  $last  = isset($_POST['last_name']) ? trim($_POST['last_name']) : '';
+  $email = isset($_POST['email']) ? trim($_POST['email']) : '';
+  $pwd   = isset($_POST['password']) ? (string)$_POST['password'] : '';
+  $conf  = isset($_POST['confirm']) ? (string)$_POST['confirm'] : '';
 
   $form->set('first_name', $first);
   $form->set('last_name',  $last);
   $form->set('email',      $email);
-  $form->set('password',   '');
+  $form->set('password',   '');  // clear after any POST
   $form->set('confirm',    '');
 
   if ($first === '' || !$form->validName($first)) {
@@ -58,7 +56,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
   }
 
   if (!$form->hasErrors()) {
-    $existing = $pdo->selectOne("SELECT id FROM users WHERE email = ?", [$email]);
+    $existing = $pdo->selectOne("SELECT id FROM users WHERE email = ?", array($email));
     if ($existing) {
       $form->setFieldError('email', "That email is already registered.");
     }
@@ -68,107 +66,108 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     $hash = password_hash($pwd, PASSWORD_DEFAULT);
     $inserted = $pdo->execute(
       "INSERT INTO users (first_name, last_name, email, password_hash) VALUES (?, ?, ?, ?)",
-      [$first, $last, $email, $hash]
+      array($first, $last, $email, $hash)
     );
     if ($inserted > 0) {
       $success = true;
-      $form->clearValues(); 
+      $form->clearValues(); // clear fields after success
     }
   }
 }
 
-$rows = $pdo->selectAll("SELECT id, first_name, last_name, email, created_at FROM users ORDER BY id DESC");
+/** Table rows (include hash) */
+$rows = $pdo->selectAll("SELECT first_name, last_name, email, password_hash FROM users ORDER BY id DESC");
 ?>
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Assignment 9 — Sticky Registration Form</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Form</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
     body { padding: 2rem; }
-    .card { max-width: 760px; margin: 0 auto; }
-    .required::after { content:" *"; color:#dc3545; }
-    .records { max-width: 980px; margin: 2rem auto 0; }
+    .container-narrow { max-width: 980px; margin: 0 auto; }
+    label { font-weight: 500; white-space: nowrap; } /* keep labels horizontal */
+    th { white-space: nowrap; }                     /* one-line headers */
+    .row-gap { row-gap: 1rem; }                     /* consistent vertical gap */
   </style>
 </head>
 <body>
-  <div class="card shadow-sm">
-    <div class="card-body">
-      <h1 class="h4 mb-3">User Registration</h1>
+  <div class="container-narrow">
+    <?php if ($success): ?>
+      <div class="alert alert-success mb-3">You have been added to the database</div>
+    <?php endif; ?>
 
-      <?php if ($success): ?>
-        <div class="alert alert-success">Success! Record saved and fields cleared.</div>
-      <?php endif; ?>
-
-      <form method="post" novalidate>
-        <div class="mb-3">
-          <label for="first_name" class="form-label required">First Name</label>
-          <input id="first_name" name="first_name" class="form-control" value="<?= $form->get('first_name') ?>">
-          <?= $form->errorFor('first_name') ?>
+    <form method="post" novalidate>
+      <!-- Row 1: First + Last (side-by-side) -->
+      <div class="row row-gap">
+        <div class="col-12 col-md-6">
+          <label for="first_name" class="form-label">First Name</label>
+          <input id="first_name" name="first_name" class="form-control"
+                 value="<?php echo $form->get('first_name'); ?>">
+          <?php echo $form->errorFor('first_name'); ?>
         </div>
-
-        <div class="mb-3">
-          <label for="last_name" class="form-label required">Last Name</label>
-          <input id="last_name" name="last_name" class="form-control" value="<?= $form->get('last_name') ?>">
-          <?= $form->errorFor('last_name') ?>
+        <div class="col-12 col-md-6">
+          <label for="last_name" class="form-label">Last Name</label>
+          <input id="last_name" name="last_name" class="form-control"
+                 value="<?php echo $form->get('last_name'); ?>">
+          <?php echo $form->errorFor('last_name'); ?>
         </div>
+      </div>
 
-        <div class="mb-3">
-          <label for="email" class="form-label required">Email</label>
-          <input id="email" name="email" type="email" class="form-control" value="<?= $form->get('email') ?>">
-          <?= $form->errorFor('email') ?>
+      <!-- Row 2: Email + Password + Confirm (side-by-side) -->
+      <div class="row row-gap mt-0">
+        <div class="col-12 col-md-4">
+          <label for="email" class="form-label">Email</label>
+          <input id="email" name="email" type="email" class="form-control"
+                 value="<?php echo $form->get('email'); ?>">
+          <?php echo $form->errorFor('email'); ?>
         </div>
-
-        <div class="mb-3">
-          <label for="password" class="form-label required">Password</label>
-          <input id="password" name="password" type="password" class="form-control" value="">
-          <?= $form->errorFor('password') ?>
+        <div class="col-12 col-md-4">
+          <label for="password" class="form-label">Password</label>
+          <!-- visible default on first load only -->
+          <input id="password" name="password" type="text" class="form-control"
+                 value="<?php echo !$isPost ? htmlspecialchars($form->get('password')) : ''; ?>">
+          <?php echo $form->errorFor('password'); ?>
         </div>
-
-        <div class="mb-3">
-          <label for="confirm" class="form-label required">Confirm Password</label>
-          <input id="confirm" name="confirm" type="password" class="form-control" value="">
-          <?= $form->errorFor('confirm') ?>
+        <div class="col-12 col-md-4">
+          <label for="confirm" class="form-label">Confirm Password</label>
+          <input id="confirm" name="confirm" type="text" class="form-control"
+                 value="<?php echo !$isPost ? htmlspecialchars($form->get('confirm')) : ''; ?>">
+          <?php echo $form->errorFor('confirm'); ?>
         </div>
+      </div>
 
+      <div class="mt-3">
         <button class="btn btn-primary">Register</button>
-      </form>
+      </div>
+    </form>
+
+    <div class="mt-4">
+      <table class="table table-bordered align-middle">
+        <thead>
+          <tr>
+            <th>First Name</th>
+            <th>Last Name</th>
+            <th>Email</th>
+            <th>Password</th>
+          </tr>
+        </thead>
+        <tbody>
+        <?php if (empty($rows)): ?>
+          <tr><td colspan="4" class="text-center text-muted">No records yet.</td></tr>
+        <?php else: foreach ($rows as $r): ?>
+          <tr>
+            <td><?php echo htmlspecialchars($r['first_name']); ?></td>
+            <td><?php echo htmlspecialchars($r['last_name']); ?></td>
+            <td><?php echo htmlspecialchars($r['email']); ?></td>
+            <td><?php echo htmlspecialchars($r['password_hash']); ?></td>
+          </tr>
+        <?php endforeach; endif; ?>
+        </tbody>
+      </table>
     </div>
   </div>
-
-  <div class="records">
-    <h2 class="h5 mb-3">All Records</h2>
-    <?php if (empty($rows)): ?>
-      <div class="alert alert-info">No records yet.</div>
-    <?php else: ?>
-      <div class="table-responsive">
-        <table class="table table-bordered align-middle">
-          <thead>
-            <tr>
-              <th scope="col" style="width:80px;">ID</th>
-              <th scope="col">First</th>
-              <th scope="col">Last</th>
-              <th scope="col">Email</th>
-              <th scope="col" style="width:200px;">Created</th>
-            </tr>
-          </thead>
-          <tbody>
-          <?php foreach ($rows as $r): ?>
-            <tr>
-              <td><?= (int)$r['id'] ?></td>
-              <td><?= htmlspecialchars($r['first_name']) ?></td>
-              <td><?= htmlspecialchars($r['last_name']) ?></td>
-              <td><?= htmlspecialchars($r['email']) ?></td>
-              <td><?= htmlspecialchars($r['created_at']) ?></td>
-            </tr>
-          <?php endforeach; ?>
-          </tbody>
-        </table>
-      </div>
-    <?php endif; ?>
-  </div>
-
 </body>
 </html>
