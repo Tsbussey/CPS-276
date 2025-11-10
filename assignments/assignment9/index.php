@@ -28,6 +28,7 @@ if ($isPost) {
   $pwd   = (string)($_POST['password'] ?? '');
   $conf  = (string)($_POST['confirm'] ?? '');
 
+  // sticky fill
   $form->set('first_name', $first);
   $form->set('last_name',  $last);
   $form->set('email',      $email);
@@ -38,12 +39,13 @@ if ($isPost) {
   if ($last  === '' || !$form->validName($last))  $form->setFieldError('last_name',"Last name must contain only letters, spaces, or apostrophes.");
   if ($email === '' || !$form->validEmail($email)) $form->setFieldError('email',"Enter a valid email address.");
 
-  // ✅ Only one error at a time between password/confirm
+  // Only one error across password/confirm
   if ($pwd === '' || !$form->strongPassword($pwd)) {
     $form->setFieldError('password', "Must have at least (8 characters, 1 uppercase, 1 symbol, 1 number)");
   } else {
     if ($conf === '' || $conf !== $pwd) {
-      $form->setFieldError('confirm', "Passwords must match.");
+      // EXACT copy requested:
+      $form->setFieldError('confirm', "your passwords do not match");
     }
   }
 
@@ -61,7 +63,7 @@ if ($isPost) {
     ) > 0) {
       $success = true;
       $form->clearValues();
-      // demo reseed to keep fields visible
+      // reseed demo values
       $form->set('first_name','Scott');
       $form->set('last_name','Shaper');
       $form->set('email','sshaper@wccnet.edu');
