@@ -18,10 +18,17 @@ $form->setDefaultValues([
   'confirm'    => 'Pass$or1',
 ]);
 
-$success = false;
+$success     = false;
+$topMessage  = '';   // single-line banner message (success or first error)
+
+/** helper: set top message once */
+$setTop = function (string $msg) use (&$topMessage) {
+  if ($topMessage === '') { $topMessage = $msg; }
+};
 
 if ($isPost) {
   $form->resetErrors();
+
   $first = trim($_POST['first_name'] ?? '');
   $last  = trim($_POST['last_name'] ?? '');
   $email = trim($_POST['email'] ?? '');
@@ -35,26 +42,40 @@ if ($isPost) {
   $form->set('password',   $pwd);
   $form->set('confirm',    $conf);
 
-  if ($first === '' || !$form->validName($first)) $form->setFieldError('first_name',"First name must contain only letters, spaces, or apostrophes.");
-  if ($last  === '' || !$form->validName($last))  $form->setFieldError('last_name',"Last name must contain only letters, spaces, or apostrophes.");
-  if ($email === '' || !$form->validEmail($email)) $form->setFieldError('email',"Enter a valid email address.");
+  // validations (set only first top message)
+  if ($first === '' || !$form->validName($first)) {
+    $form->setFieldError('first_name',"First name must contain only letters, spaces, or apostrophes.");
+    $setTop("First name must contain only letters, spaces, or apostrophes.");
+  }
+  if ($last  === '' || !$form->validName($last)) {
+    $form->setFieldError('last_name',"Last name must contain only letters, spaces, or apostrophes.");
+    $setTop("Last name must contain only letters, spaces, or apostrophes.");
+  }
+  if ($email === '' || !$form->validEmail($email)) {
+    $form->setFieldError('email',"Enter a valid email address.");
+    $setTop("Enter a valid email address.");
+  }
 
-  // Only one error across password/confirm
+  // only one error between password/confirm
   if ($pwd === '' || !$form->strongPassword($pwd)) {
     $form->setFieldError('password', "Must have at least (8 characters, 1 uppercase, 1 symbol, 1 number)");
+    $setTop("Must have at least (8 characters, 1 uppercase, 1 symbol, 1 number)");
   } else {
     if ($conf === '' || $conf !== $pwd) {
-      // EXACT copy requested:
       $form->setFieldError('confirm', "your passwords do not match");
+      $setTop("your passwords do not match");
     }
   }
 
+  // duplicate email check
   if (!$form->hasErrors()) {
     if ($pdo->selectOne("SELECT id FROM users WHERE email = ?", [$email])) {
       $form->setFieldError('email',"That email is already registered.");
+      $setTop("There is already a record with that email");
     }
   }
 
+  // insert
   if (!$form->hasErrors()) {
     $hash = password_hash($pwd, PASSWORD_DEFAULT);
     if ($pdo->execute(
@@ -62,8 +83,9 @@ if ($isPost) {
       [$first,$last,$email,$hash]
     ) > 0) {
       $success = true;
+      $topMessage = "You have been added to the database";
       $form->clearValues();
-      // reseed demo values
+      // reseed demo values so inputs stay filled
       $form->set('first_name','Scott');
       $form->set('last_name','Shaper');
       $form->set('email','sshaper@wccnet.edu');
@@ -83,14 +105,15 @@ $rows = $pdo->selectAll("SELECT first_name,last_name,email,password_hash FROM us
   <title>Sticky Form Example</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
-    label { font-weight: 500; white-space: nowrap; }
-    th { white-space: nowrap; }
+    /* Plain banner: no box/alert styles; just spacing */
+    .top-msg { margin-top: 2rem; margin-bottom: .75rem; }
   </style>
 </head>
 <body>
-  <div class="container mt-5 pt-5">
-    <?php if ($success): ?>
-      <div class="alert alert-success mb-3">You have been added to the database</div>
+  <div class="container mt-5 pt-3">
+
+    <?php if ($topMessage !== ''): ?>
+      <p class="top-msg"><?php echo htmlspecialchars($topMessage); ?></p>
     <?php endif; ?>
 
     <form method="post" novalidate autocomplete="off">
@@ -98,12 +121,10 @@ $rows = $pdo->selectAll("SELECT first_name,last_name,email,password_hash FROM us
         <div class="col-12 col-md-6">
           <label for="first_name" class="form-label">First Name</label>
           <input id="first_name" name="first_name" class="form-control" value="<?php echo $form->get('first_name'); ?>">
-          <?php echo $form->errorFor('first_name'); ?>
         </div>
         <div class="col-12 col-md-6">
           <label for="last_name" class="form-label">Last Name</label>
           <input id="last_name" name="last_name" class="form-control" value="<?php echo $form->get('last_name'); ?>">
-          <?php echo $form->errorFor('last_name'); ?>
         </div>
       </div>
 
@@ -111,19 +132,16 @@ $rows = $pdo->selectAll("SELECT first_name,last_name,email,password_hash FROM us
         <div class="col-12 col-md-4">
           <label for="email" class="form-label">Email</label>
           <input id="email" name="email" type="email" class="form-control" value="<?php echo $form->get('email'); ?>">
-          <?php echo $form->errorFor('email'); ?>
         </div>
         <div class="col-12 col-md-4">
           <label for="password" class="form-label">Password</label>
           <input id="password" name="password" class="form-control" type="text" autocomplete="off"
                  value="<?php echo htmlspecialchars($form->get('password')); ?>">
-          <?php echo $form->errorFor('password'); ?>
         </div>
         <div class="col-12 col-md-4">
           <label for="confirm" class="form-label">Confirm Password</label>
           <input id="confirm" name="confirm" class="form-control" type="text" autocomplete="off"
                  value="<?php echo htmlspecialchars($form->get('confirm')); ?>">
-          <?php echo $form->errorFor('confirm'); ?>
         </div>
       </div>
 
