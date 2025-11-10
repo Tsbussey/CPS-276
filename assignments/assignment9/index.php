@@ -10,7 +10,6 @@ $pdo->createUsersTableIfMissing();
 
 $isPost = ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST';
 
-/* Demo defaults — visible on load */
 $form->setDefaultValues([
   'first_name' => 'Scott',
   'last_name'  => 'Shaper',
@@ -35,11 +34,18 @@ if ($isPost) {
   $form->set('password',   $pwd);
   $form->set('confirm',    $conf);
 
-  if ($first === '' || !$form->validName($first))   $form->setFieldError('first_name',"First name must contain only letters, spaces, or apostrophes.");
-  if ($last  === '' || !$form->validName($last))    $form->setFieldError('last_name',"Last name must contain only letters, spaces, or apostrophes.");
-  if ($email === '' || !$form->validEmail($email))  $form->setFieldError('email',"Enter a valid email address.");
-  if ($pwd   === '' || !$form->strongPassword($pwd))$form->setFieldError('password',"Password must be ≥8 chars with 1 uppercase, 1 number, and 1 symbol.");
-  if ($conf  === '' || $conf !== $pwd)              $form->setFieldError('confirm',"Passwords must match.");
+  if ($first === '' || !$form->validName($first)) $form->setFieldError('first_name',"First name must contain only letters, spaces, or apostrophes.");
+  if ($last  === '' || !$form->validName($last))  $form->setFieldError('last_name',"Last name must contain only letters, spaces, or apostrophes.");
+  if ($email === '' || !$form->validEmail($email)) $form->setFieldError('email',"Enter a valid email address.");
+
+  // ✅ Only one error at a time between password/confirm
+  if ($pwd === '' || !$form->strongPassword($pwd)) {
+    $form->setFieldError('password', "Must have at least (8 characters, 1 uppercase, 1 symbol, 1 number)");
+  } else {
+    if ($conf === '' || $conf !== $pwd) {
+      $form->setFieldError('confirm', "Passwords must match.");
+    }
+  }
 
   if (!$form->hasErrors()) {
     if ($pdo->selectOne("SELECT id FROM users WHERE email = ?", [$email])) {
@@ -55,11 +61,11 @@ if ($isPost) {
     ) > 0) {
       $success = true;
       $form->clearValues();
-      // re-seed demo defaults post-insert (class demo only)
+      // demo reseed to keep fields visible
       $form->set('first_name','Scott');
       $form->set('last_name','Shaper');
       $form->set('email','sshaper@wccnet.edu');
-      $form->set('password','Pass$or1');  // why: keep demo prefill
+      $form->set('password','Pass$or1');
       $form->set('confirm','Pass$or1');
     }
   }
@@ -107,24 +113,14 @@ $rows = $pdo->selectAll("SELECT first_name,last_name,email,password_hash FROM us
         </div>
         <div class="col-12 col-md-4">
           <label for="password" class="form-label">Password</label>
-          <input
-            id="password"
-            name="password"
-            class="form-control"
-            type="<?php echo $form->get('password') !== '' ? 'text' : 'password'; ?>"
-            autocomplete="new-password"
-            value="<?php echo htmlspecialchars($form->get('password')); ?>">
+          <input id="password" name="password" class="form-control" type="text" autocomplete="off"
+                 value="<?php echo htmlspecialchars($form->get('password')); ?>">
           <?php echo $form->errorFor('password'); ?>
         </div>
         <div class="col-12 col-md-4">
           <label for="confirm" class="form-label">Confirm Password</label>
-          <input
-            id="confirm"
-            name="confirm"
-            class="form-control"
-            type="<?php echo $form->get('confirm') !== '' ? 'text' : 'password'; ?>"
-            autocomplete="new-password"
-            value="<?php echo htmlspecialchars($form->get('confirm')); ?>">
+          <input id="confirm" name="confirm" class="form-control" type="text" autocomplete="off"
+                 value="<?php echo htmlspecialchars($form->get('confirm')); ?>">
           <?php echo $form->errorFor('confirm'); ?>
         </div>
       </div>
@@ -156,15 +152,5 @@ $rows = $pdo->selectAll("SELECT first_name,last_name,email,password_hash FROM us
       </table>
     <?php endif; ?>
   </div>
-
-  <script>
-    // Auto-mask on focus (demo UX)
-    document.addEventListener('DOMContentLoaded', () => {
-      ['password','confirm'].forEach(id => {
-        const el = document.getElementById(id);
-        el.addEventListener('focus', () => { if (el.type !== 'password') el.type = 'password'; });
-      });
-    });
-  </script>
 </body>
 </html>
