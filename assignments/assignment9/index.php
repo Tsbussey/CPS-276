@@ -1,6 +1,4 @@
 <?php
-// index.php — 2-row horizontal form layout, no title, prefilled pw on first load
-
 require_once __DIR__ . '/classes/Db_conn.php';
 require_once __DIR__ . '/classes/Pdo_methods.php';
 require_once __DIR__ . '/classes/Validation.php';
@@ -10,164 +8,163 @@ $form = new StickyForm();
 $pdo  = new Pdo_methods();
 $pdo->createUsersTableIfMissing();
 
-$isPost = isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST';
+$isPost = ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST';
 
-/** Defaults shown on first load */
-$form->setDefaultValues(array(
+/* Demo defaults — visible on load */
+$form->setDefaultValues([
   'first_name' => 'Scott',
   'last_name'  => 'Shaper',
   'email'      => 'sshaper@wccnet.edu',
   'password'   => 'Pass$or1',
   'confirm'    => 'Pass$or1',
-));
+]);
 
-$rows = array();
 $success = false;
 
 if ($isPost) {
   $form->resetErrors();
-
-  $first = isset($_POST['first_name']) ? trim($_POST['first_name']) : '';
-  $last  = isset($_POST['last_name']) ? trim($_POST['last_name']) : '';
-  $email = isset($_POST['email']) ? trim($_POST['email']) : '';
-  $pwd   = isset($_POST['password']) ? (string)$_POST['password'] : '';
-  $conf  = isset($_POST['confirm']) ? (string)$_POST['confirm'] : '';
+  $first = trim($_POST['first_name'] ?? '');
+  $last  = trim($_POST['last_name'] ?? '');
+  $email = trim($_POST['email'] ?? '');
+  $pwd   = (string)($_POST['password'] ?? '');
+  $conf  = (string)($_POST['confirm'] ?? '');
 
   $form->set('first_name', $first);
   $form->set('last_name',  $last);
   $form->set('email',      $email);
-  $form->set('password',   '');  // clear after any POST
-  $form->set('confirm',    '');
+  $form->set('password',   $pwd);
+  $form->set('confirm',    $conf);
 
-  if ($first === '' || !$form->validName($first)) {
-    $form->setFieldError('first_name', "First name must contain only letters, spaces, or apostrophes.");
-  }
-  if ($last === '' || !$form->validName($last)) {
-    $form->setFieldError('last_name', "Last name must contain only letters, spaces, or apostrophes.");
-  }
-  if ($email === '' || !$form->validEmail($email)) {
-    $form->setFieldError('email', "Enter a valid email address.");
-  }
-  if ($pwd === '' || !$form->strongPassword($pwd)) {
-    $form->setFieldError('password', "Password must be ≥8 chars with 1 uppercase, 1 number, and 1 symbol.");
-  }
-  if ($conf === '' || $conf !== $pwd) {
-    $form->setFieldError('confirm', "Passwords must match.");
-  }
+  if ($first === '' || !$form->validName($first))   $form->setFieldError('first_name',"First name must contain only letters, spaces, or apostrophes.");
+  if ($last  === '' || !$form->validName($last))    $form->setFieldError('last_name',"Last name must contain only letters, spaces, or apostrophes.");
+  if ($email === '' || !$form->validEmail($email))  $form->setFieldError('email',"Enter a valid email address.");
+  if ($pwd   === '' || !$form->strongPassword($pwd))$form->setFieldError('password',"Password must be ≥8 chars with 1 uppercase, 1 number, and 1 symbol.");
+  if ($conf  === '' || $conf !== $pwd)              $form->setFieldError('confirm',"Passwords must match.");
 
   if (!$form->hasErrors()) {
-    $existing = $pdo->selectOne("SELECT id FROM users WHERE email = ?", array($email));
-    if ($existing) {
-      $form->setFieldError('email', "That email is already registered.");
+    if ($pdo->selectOne("SELECT id FROM users WHERE email = ?", [$email])) {
+      $form->setFieldError('email',"That email is already registered.");
     }
   }
 
   if (!$form->hasErrors()) {
     $hash = password_hash($pwd, PASSWORD_DEFAULT);
-    $inserted = $pdo->execute(
-      "INSERT INTO users (first_name, last_name, email, password_hash) VALUES (?, ?, ?, ?)",
-      array($first, $last, $email, $hash)
-    );
-    if ($inserted > 0) {
+    if ($pdo->execute(
+      "INSERT INTO users (first_name,last_name,email,password_hash) VALUES (?,?,?,?)",
+      [$first,$last,$email,$hash]
+    ) > 0) {
       $success = true;
-      $form->clearValues(); // clear fields after success
+      $form->clearValues();
+      // re-seed demo defaults post-insert (class demo only)
+      $form->set('first_name','Scott');
+      $form->set('last_name','Shaper');
+      $form->set('email','sshaper@wccnet.edu');
+      $form->set('password','Pass$or1');  // why: keep demo prefill
+      $form->set('confirm','Pass$or1');
     }
   }
 }
 
-/** Table rows (include hash) */
-$rows = $pdo->selectAll("SELECT first_name, last_name, email, password_hash FROM users ORDER BY id DESC");
+$rows = $pdo->selectAll("SELECT first_name,last_name,email,password_hash FROM users ORDER BY id DESC");
 ?>
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Form</title>
+  <title>Sticky Form Example</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
-    body { padding: 2rem; }
-    .container-narrow { max-width: 980px; margin: 0 auto; }
-    label { font-weight: 500; white-space: nowrap; } /* keep labels horizontal */
-    th { white-space: nowrap; }                     /* one-line headers */
-    .row-gap { row-gap: 1rem; }                     /* consistent vertical gap */
+    label { font-weight: 500; white-space: nowrap; }
+    th { white-space: nowrap; }
   </style>
 </head>
 <body>
-  <div class="container-narrow">
+  <div class="container mt-5 pt-5">
     <?php if ($success): ?>
       <div class="alert alert-success mb-3">You have been added to the database</div>
     <?php endif; ?>
 
-    <form method="post" novalidate>
-      <!-- Row 1: First + Last (side-by-side) -->
-      <div class="row row-gap">
+    <form method="post" novalidate autocomplete="off">
+      <div class="row g-3">
         <div class="col-12 col-md-6">
           <label for="first_name" class="form-label">First Name</label>
-          <input id="first_name" name="first_name" class="form-control"
-                 value="<?php echo $form->get('first_name'); ?>">
+          <input id="first_name" name="first_name" class="form-control" value="<?php echo $form->get('first_name'); ?>">
           <?php echo $form->errorFor('first_name'); ?>
         </div>
         <div class="col-12 col-md-6">
           <label for="last_name" class="form-label">Last Name</label>
-          <input id="last_name" name="last_name" class="form-control"
-                 value="<?php echo $form->get('last_name'); ?>">
+          <input id="last_name" name="last_name" class="form-control" value="<?php echo $form->get('last_name'); ?>">
           <?php echo $form->errorFor('last_name'); ?>
         </div>
       </div>
 
-      <!-- Row 2: Email + Password + Confirm (side-by-side) -->
-      <div class="row row-gap mt-0">
+      <div class="row g-3 mt-0">
         <div class="col-12 col-md-4">
           <label for="email" class="form-label">Email</label>
-          <input id="email" name="email" type="email" class="form-control"
-                 value="<?php echo $form->get('email'); ?>">
+          <input id="email" name="email" type="email" class="form-control" value="<?php echo $form->get('email'); ?>">
           <?php echo $form->errorFor('email'); ?>
         </div>
         <div class="col-12 col-md-4">
           <label for="password" class="form-label">Password</label>
-          <!-- visible default on first load only -->
-          <input id="password" name="password" type="text" class="form-control"
-                 value="<?php echo !$isPost ? htmlspecialchars($form->get('password')) : ''; ?>">
+          <input
+            id="password"
+            name="password"
+            class="form-control"
+            type="<?php echo $form->get('password') !== '' ? 'text' : 'password'; ?>"
+            autocomplete="new-password"
+            value="<?php echo htmlspecialchars($form->get('password')); ?>">
           <?php echo $form->errorFor('password'); ?>
         </div>
         <div class="col-12 col-md-4">
           <label for="confirm" class="form-label">Confirm Password</label>
-          <input id="confirm" name="confirm" type="text" class="form-control"
-                 value="<?php echo !$isPost ? htmlspecialchars($form->get('confirm')) : ''; ?>">
+          <input
+            id="confirm"
+            name="confirm"
+            class="form-control"
+            type="<?php echo $form->get('confirm') !== '' ? 'text' : 'password'; ?>"
+            autocomplete="new-password"
+            value="<?php echo htmlspecialchars($form->get('confirm')); ?>">
           <?php echo $form->errorFor('confirm'); ?>
         </div>
       </div>
 
-      <div class="mt-3">
-        <button class="btn btn-primary">Register</button>
+      <div class="mt-3 mb-2">
+        <button class="btn btn-primary" type="submit">Register</button>
       </div>
     </form>
 
-    <div class="mt-4">
-      <table class="table table-bordered align-middle">
+    <?php if (empty($rows)): ?>
+      <p class="text-muted mt-2 mb-0">No records to display.</p>
+    <?php else: ?>
+      <table class="table table-bordered mt-2 mb-0">
         <thead>
           <tr>
-            <th>First Name</th>
-            <th>Last Name</th>
-            <th>Email</th>
-            <th>Password</th>
+            <th>First Name</th><th>Last Name</th><th>Email</th><th>Password</th>
           </tr>
         </thead>
         <tbody>
-        <?php if (empty($rows)): ?>
-          <tr><td colspan="4" class="text-center text-muted">No records yet.</td></tr>
-        <?php else: foreach ($rows as $r): ?>
-          <tr>
-            <td><?php echo htmlspecialchars($r['first_name']); ?></td>
-            <td><?php echo htmlspecialchars($r['last_name']); ?></td>
-            <td><?php echo htmlspecialchars($r['email']); ?></td>
-            <td><?php echo htmlspecialchars($r['password_hash']); ?></td>
-          </tr>
-        <?php endforeach; endif; ?>
+          <?php foreach ($rows as $r): ?>
+            <tr>
+              <td><?php echo htmlspecialchars($r['first_name']); ?></td>
+              <td><?php echo htmlspecialchars($r['last_name']); ?></td>
+              <td><?php echo htmlspecialchars($r['email']); ?></td>
+              <td><?php echo htmlspecialchars($r['password_hash']); ?></td>
+            </tr>
+          <?php endforeach; ?>
         </tbody>
       </table>
-    </div>
+    <?php endif; ?>
   </div>
+
+  <script>
+    // Auto-mask on focus (demo UX)
+    document.addEventListener('DOMContentLoaded', () => {
+      ['password','confirm'].forEach(id => {
+        const el = document.getElementById(id);
+        el.addEventListener('focus', () => { if (el.type !== 'password') el.type = 'password'; });
+      });
+    });
+  </script>
 </body>
 </html>
