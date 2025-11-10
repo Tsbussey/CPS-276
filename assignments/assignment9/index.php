@@ -10,6 +10,7 @@ $pdo->createUsersTableIfMissing();
 
 $isPost = ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST';
 
+/* Prefill on initial load only */
 $form->setDefaultValues([
   'first_name' => 'Scott',
   'last_name'  => 'Shaper',
@@ -18,13 +19,8 @@ $form->setDefaultValues([
   'confirm'    => 'Pass$or1',
 ]);
 
-$success     = false;
-$topMessage  = '';   // single-line banner message (success or first error)
-
-/** helper: set top message once */
-$setTop = function (string $msg) use (&$topMessage) {
-  if ($topMessage === '') { $topMessage = $msg; }
-};
+$success    = false;
+$topMessage = '';
 
 if ($isPost) {
   $form->resetErrors();
@@ -35,63 +31,53 @@ if ($isPost) {
   $pwd   = (string)($_POST['password'] ?? '');
   $conf  = (string)($_POST['confirm'] ?? '');
 
-  // sticky fill
+  // sticky values
   $form->set('first_name', $first);
   $form->set('last_name',  $last);
   $form->set('email',      $email);
   $form->set('password',   $pwd);
   $form->set('confirm',    $conf);
 
-  // validations (set only first top message)
-  if ($first === '' || !$form->validName($first)) {
-    $form->setFieldError('first_name',"First name must contain only letters, spaces, or apostrophes.");
-    $setTop("First name must contain only letters, spaces, or apostrophes.");
-  }
-  if ($last  === '' || !$form->validName($last)) {
-    $form->setFieldError('last_name',"Last name must contain only letters, spaces, or apostrophes.");
-    $setTop("Last name must contain only letters, spaces, or apostrophes.");
-  }
-  if ($email === '' || !$form->validEmail($email)) {
-    $form->setFieldError('email',"Enter a valid email address.");
-    $setTop("Enter a valid email address.");
-  }
+  // field validation
+  if ($first === '' || !$form->validName($first)) $form->setFieldError('first_name',"First name must contain only letters, spaces, or apostrophes.");
+  if ($last  === '' || !$form->validName($last))  $form->setFieldError('last_name',"Last name must contain only letters, spaces, or apostrophes.");
+  if ($email === '' || !$form->validEmail($email)) $form->setFieldError('email',"Enter a valid email address.");
 
-  // only one error between password/confirm
+  // one error at a time between password/confirm
   if ($pwd === '' || !$form->strongPassword($pwd)) {
-    $form->setFieldError('password', "Must have at least (8 characters, 1 uppercase, 1 symbol, 1 number)");
-    $setTop("Must have at least (8 characters, 1 uppercase, 1 symbol, 1 number)");
-  } else {
-    if ($conf === '' || $conf !== $pwd) {
-      $form->setFieldError('confirm', "your passwords do not match");
-      $setTop("your passwords do not match");
-    }
+    $form->setFieldError('password',"Must have at least (8 characters, 1 uppercase, 1 symbol, 1 number)");
+  } else if ($conf === '' || $conf !== $pwd) {
+    $form->setFieldError('confirm',"your passwords do not match");
   }
 
-  // duplicate email check
+  // dup email
   if (!$form->hasErrors()) {
     if ($pdo->selectOne("SELECT id FROM users WHERE email = ?", [$email])) {
-      $form->setFieldError('email',"That email is already registered.");
-      $setTop("There is already a record with that email");
+      $form->setFieldError('email',"There is already a record with that email");
     }
   }
 
-  // insert
+  // insert or re-render
   if (!$form->hasErrors()) {
     $hash = password_hash($pwd, PASSWORD_DEFAULT);
     if ($pdo->execute(
       "INSERT INTO users (first_name,last_name,email,password_hash) VALUES (?,?,?,?)",
       [$first,$last,$email,$hash]
     ) > 0) {
-      $success = true;
+      $success    = true;
       $topMessage = "You have been added to the database";
+
+      // ✅ clear ALL inputs after success (no reseed)
       $form->clearValues();
-      // reseed demo values so inputs stay filled
-      $form->set('first_name','Scott');
-      $form->set('last_name','Shaper');
-      $form->set('email','sshaper@wccnet.edu');
-      $form->set('password','Pass$or1');
-      $form->set('confirm','Pass$or1');
+      $form->set('first_name','');
+      $form->set('last_name','');
+      $form->set('email','');
+      $form->set('password','');
+      $form->set('confirm','');
     }
+  } else {
+    // first error becomes the top message (plain text)
+    $topMessage = $form->masterStatus['topMessage'] ?? $topMessage;
   }
 }
 
@@ -105,8 +91,9 @@ $rows = $pdo->selectAll("SELECT first_name,last_name,email,password_hash FROM us
   <title>Sticky Form Example</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
-    /* Plain banner: no box/alert styles; just spacing */
     .top-msg { margin-top: 2rem; margin-bottom: .75rem; }
+    label { font-weight: 500; white-space: nowrap; }
+    th { white-space: nowrap; }
   </style>
 </head>
 <body>
