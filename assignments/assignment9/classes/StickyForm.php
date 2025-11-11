@@ -23,7 +23,7 @@ class StickyForm extends Validation {
   public function setFieldError($name, $message) {
     if (isset($this->formConfig['fields'][$name])) {
       $this->formConfig['fields'][$name]['error'] = $message;
-      $this->formConfig['masterStatus']['error'] = true; // why: single flag to gate inserts
+      $this->formConfig['masterStatus']['error'] = true; // single flag to gate inserts
     }
   }
   public function get($name) {

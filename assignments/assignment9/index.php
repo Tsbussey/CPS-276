@@ -67,7 +67,7 @@ if ($isPost) {
       $success    = true;
       $topMessage = "You have been added to the database";
 
-      // ✅ clear ALL inputs after success (no reseed)
+      // clear ALL inputs after success (no reseed)
       $form->clearValues();
       $form->set('first_name','');
       $form->set('last_name','');
