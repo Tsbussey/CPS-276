@@ -1,10 +1,7 @@
 <?php
-// ===== /php/rest_client.php =====
+// ====================== /php/rest_client.php ======================
 /**
- * getWeather(): returns [ $acknowledgementHtml, $outputHtml ]
- * Uses cURL to call:
- *   https://russet-v8.wccnet.edu/~sshaper/assignments/assignment10_rest/get_weather_json.php?zip_code={ZIP}
- * per spec (:contentReference[oaicite:13]{index=13}).
+ * Returns [ $ackHtml, $outputHtml ] with teacher-style layout.
  */
 function getWeather(): array
 {
@@ -12,7 +9,6 @@ function getWeather(): array
     $baseUrl = 'https://russet-v8.wccnet.edu/~sshaper/assignments/assignment10_rest/get_weather_json.php';
     $url = $baseUrl . '?zip_code=' . urlencode($zip);
 
-    // Defensive: empty input still goes to API (API itself may return "No zip code provided.")
     $ch = curl_init($url);
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
@@ -26,211 +22,190 @@ function getWeather(): array
     $httpStatus = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
 
-    if ($curlErr) {
-        return [alert("danger", "Request error: " . htmlspecialchars($curlErr)), ""];
-    }
-    if ($httpStatus >= 400) {
-        return [alert("danger", "Server returned HTTP $httpStatus."), ""];
-    }
-    if ($body === false || $body === '') {
-        return [alert("danger", "Empty response from server."), ""];
-    }
+    if ($curlErr)                 return [plainError("Request error: " . htmlspecialchars($curlErr)), ""];
+    if ($httpStatus >= 400)       return [plainError("Server returned HTTP $httpStatus."), ""];
+    if ($body === false || $body==='') return [plainError("Empty response from server."), ""];
 
-    // Try to decode JSON; API examples vary in formatting (error key variations).
     $data = json_decode($body, true);
-
     if (json_last_error() !== JSON_ERROR_NONE) {
-        // Sometimes the service might return PHP-ish array syntax; show raw for debugging.
-        return [alert("danger", "Invalid JSON response."), preBlock($body)];
+        return [plainError("Invalid JSON response."), rawBlock($body)];
     }
 
-    // Normalize/locate error message regardless of shape
     $err = extractError($data);
-    if ($err !== null) {
-        return [alert("danger", htmlspecialchars($err)), ""];
-    }
+    if ($err !== null) return [plainError($err), ""];  // error text above the form (black)
 
-    // Expecting structure similar to example:
-    // {
-    //   "searched_city": { "name": "...", "temperature": "72°F", "humidity": "60%", "forecast":[...] },
-    //   "other_cities": [ { "name":"...", "temperature":"64°F" }, ... ]
-    // }
     $searched = $data['searched_city'] ?? null;
     if (!is_array($searched)) {
-        return [alert("danger", "Unexpected payload: missing searched_city."), preBlock($body)];
+        return [plainError("Unexpected payload: missing searched_city."), rawBlock($body)];
     }
 
-    $name = (string)($searched['name'] ?? 'Unknown');
-    $tempStr = (string)($searched['temperature'] ?? '');
-    $humStr  = (string)($searched['humidity'] ?? '');
+    $name     = (string)($searched['name'] ?? 'Unknown');
+    $tempStr  = (string)($searched['temperature'] ?? '');
+    $humStr   = (string)($searched['humidity'] ?? '');
     $forecast = is_array($searched['forecast'] ?? null) ? $searched['forecast'] : [];
 
     $searchedTemp = parseTempToInt($tempStr);
-    $others = is_array($data['other_cities'] ?? null) ? $data['other_cities'] : [];
 
-    // Partition hotter/colder relative to searched
+    // Collect other cities robustly (handles different API key names)
+    $others = collectOtherCities($data, $name);
+
+    // Partition by relative temperature
     $hotter = [];
     $colder = [];
     foreach ($others as $c) {
-        if (!isset($c['name'], $c['temperature'])) {
-            continue;
-        }
+        if (!isset($c['name'], $c['temperature'])) continue;
         $t = parseTempToInt((string)$c['temperature']);
-        if ($t === null || $searchedTemp === null) {
-            continue;
-        }
+        if ($t === null || $searchedTemp === null) continue;
+
         $entry = [
-            'name' => (string)$c['name'],
-            'temperature' => (string)$c['temperature'],
-            't' => $t,
-            'delta' => abs($t - $searchedTemp),
+            'name'  => (string)$c['name'],
+            'temperature' => sanitizeTemp((string)$c['temperature']), // keep °
+            't'     => $t,
         ];
-        if ($t > $searchedTemp) {
-            $hotter[] = $entry;
-        } elseif ($t < $searchedTemp) {
-            $colder[] = $entry;
-        }
+        if ($t > $searchedTemp) $hotter[] = $entry;
+        elseif ($t < $searchedTemp) $colder[] = $entry;
     }
 
-    // Sort by closeness (then temp) for a stable, sensible order
-    usort($hotter, fn($a,$b) => $a['delta'] <=> $b['delta'] ?: $a['t'] <=> $b['t']);
-    usort($colder, fn($a,$b) => $a['delta'] <=> $b['delta'] ?: $a['t'] <=> $b['t']);
+    // Order like the teacher: hotter DESC, colder ASC
+    usort($hotter, fn($a,$b) => $b['t'] <=> $a['t']);
+    usort($colder, fn($a,$b) => $a['t'] <=> $b['t']);
 
-    // Cap per spec: 3 hotter (:contentReference[oaicite:14]{index=14}), up to 5 colder (:contentReference[oaicite:15]{index=15})
+    // Cap to 3 & 3
     $hotter = array_slice($hotter, 0, 3);
-    $colder = array_slice($colder, 0, 5);
+    $colder = array_slice($colder, 0, 3);
 
-    // Build HTML with Bootstrap
-    $ack = alert("success", "Showing results for <strong>" . htmlspecialchars($name) . "</strong> (Zip: " . htmlspecialchars($zip) . ").");
-
+    // Build HTML
+    $ack = "";
     $html = '';
-    $html .= searchedCityCard($name, $tempStr, $humStr, $forecast);
-    $html .= listTable("Cities Hotter Than " . htmlspecialchars($name), $hotter, "No cities are hotter than the searched city.");
-    $html .= listTable("Cities Colder Than " . htmlspecialchars($name), $colder, "No cities are colder than the searched city.");
+    $html .= searchedCityBlock($name, sanitizeTemp($tempStr), htmlspecialchars($humStr), $forecast);
+
+    // Sentence when empty; otherwise striped table
+    $html .= tableOrMessage(
+        "Up to three cities where temperatures are higher than " . htmlspecialchars($name),
+        $hotter,
+        "There are no cities with temperatures higher than " . htmlspecialchars($name) . "."
+    );
+    $html .= tableOrMessage(
+        "Up to three cities where temperatures are lower than " . htmlspecialchars($name),
+        $colder,
+        "There are no cities with temperatures lower than " . htmlspecialchars($name) . "."
+    );
 
     return [$ack, $html];
 }
 
-/** Extracts numeric temperature from strings like "72°F" or "-3°". */
+/** Decode HTML entities (e.g., 77&deg;F → 77°F) and re-escape safe HTML. */
+function sanitizeTemp(string $s): string {
+    $decoded = html_entity_decode($s, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    return htmlspecialchars($decoded, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+}
+
+/** Extract numeric temperature for comparisons (handles &deg;). */
 function parseTempToInt(?string $s): ?int {
     if ($s === null) return null;
-    // keep sign and digits only
-    if (!preg_match('/-?\d+/', $s, $m)) return null;
+    $decoded = html_entity_decode($s, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    if (!preg_match('/-?\d+/', $decoded, $m)) return null;
     return (int)$m[0];
 }
 
-/** Bootstrap alert helper. */
-function alert(string $type, string $msg): string {
-    return '<div class="alert alert-' . htmlspecialchars($type) . ' alert-dismissible fade show" role="alert">'
-         . $msg
-         . '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>'
-         . '</div>';
+/** Plain (black) error text shown above the form. */
+function plainError(string $msg): string {
+    return '<p class="mb-2">'.$msg.'</p>';
 }
 
-/** Pre block (why: show raw payload if malformed). */
-function preBlock(string $raw): string {
-    return '<div class="card border-danger-subtle mb-3"><div class="card-body"><pre class="mb-0">'
-         . htmlspecialchars($raw)
-         . '</pre></div></div>';
+/** Raw payload block (only used when JSON is malformed). */
+function rawBlock(string $raw): string {
+    return '<pre class="border p-2 bg-light">'.htmlspecialchars($raw).'</pre>';
 }
 
-/** Card for the searched city and forecast. */
-function searchedCityCard(string $name, string $temp, string $humidity, array $forecast): string {
-    $rows = '';
+/** Searched city section: larger title + spacing; bulleted 3-day forecast. */
+function searchedCityBlock(string $name, string $temp, string $humidity, array $forecast): string {
+    $items = '';
     foreach ($forecast as $f) {
-        $day = htmlspecialchars((string)($f['day'] ?? ''));
+        $day  = htmlspecialchars((string)($f['day'] ?? ''));
         $cond = htmlspecialchars((string)($f['condition'] ?? ''));
-        $rows .= "<tr><td>{$day}</td><td>{$cond}</td></tr>";
+        if ($day === '' && $cond === '') continue;
+        $items .= "<li class=\"mb-1\">{$day}: {$cond}</li>";
     }
-    if ($rows === '') {
-        $rows = '<tr><td colspan="2" class="text-muted">No forecast available.</td></tr>';
-    }
+    if ($items === '') $items = '<li class="text-muted mb-1">No forecast available.</li>';
 
     return <<<HTML
-<div class="card shadow-sm mb-4">
-  <div class="card-header fw-semibold">Searched City</div>
-  <div class="card-body">
-    <div class="row g-3 align-items-center mb-3">
-      <div class="col-md">
-        <h2 class="h4 mb-1">{$name}</h2>
-        <div class="small text-muted">Temperature: {$temp} &middot; Humidity: {$humidity}</div>
-      </div>
-    </div>
-    <h3 class="h6 mb-2">3-Day Forecast</h3>
-    <div class="table-responsive">
-      <table class="table table-sm table-striped align-middle mb-0">
-        <thead><tr><th style="width:40%">Day</th><th>Condition</th></tr></thead>
-        <tbody>
-          {$rows}
-        </tbody>
-      </table>
-    </div>
-  </div>
-</div>
+<section class="mb-4">
+  <h2 class="fs-2 mb-3">{$name}</h2>
+  <p class="mb-2"><strong>Temperature:</strong> {$temp}</p>
+  <p class="mb-3"><strong>Humidity:</strong> {$humidity}</p>
+  <p class="mb-2"><strong>3-day forecast</strong></p>
+  <ul class="mb-4">{$items}</ul>
+</section>
 HTML;
 }
 
-/** Table for hotter/colder lists. */
-function listTable(string $title, array $items, string $emptyMsg): string {
+/** Title + table when rows exist; otherwise a single sentence (no table). */
+function tableOrMessage(string $title, array $items, string $emptyMsg): string {
+    if (empty($items)) {
+        return '<p class="mb-4"><strong>'.htmlspecialchars($emptyMsg).'</strong></p>';
+    }
     $rows = '';
     foreach ($items as $c) {
-        $rows .= '<tr>'
-               . '<td>' . htmlspecialchars($c['name']) . '</td>'
-               . '<td>' . htmlspecialchars($c['temperature']) . '</td>'
-               . '</tr>';
+        $rows .= '<tr><td>'.htmlspecialchars($c['name']).'</td><td>'.$c['temperature'].'</td></tr>';
     }
-    if ($rows === '') {
-        $rows = '<tr><td colspan="2" class="text-muted">' . htmlspecialchars($emptyMsg) . '</td></tr>';
-    }
-
     return <<<HTML
-<div class="card shadow-sm mb-4">
-  <div class="card-header fw-semibold">{$title}</div>
-  <div class="card-body">
-    <div class="table-responsive">
-      <table class="table table-striped align-middle mb-0">
-        <thead><tr><th style="width:60%">City</th><th>Temperature</th></tr></thead>
-        <tbody>{$rows}</tbody>
-      </table>
-    </div>
+<section class="mb-4">
+  <p class="mb-2"><strong>{$title}</strong></p>
+  <div class="table-responsive">
+    <table class="table table-striped align-middle mb-0">
+      <thead><tr><th style="width:60%">City Name</th><th>Temperature</th></tr></thead>
+      <tbody>{$rows}</tbody>
+    </table>
   </div>
-</div>
+</section>
 HTML;
 }
 
-/**
- * Attempts to find an 'error' message in any of the API's listed formats,
- * including the special-case variant shown in the spec.
- * Why: API shows differently formatted "error" examples in the PDF.
- */
+/** Pull an error message from multiple possible response shapes. */
 function extractError($payload): ?string {
     if ($payload === null) return "Empty response.";
-    if (is_string($payload)) {
-        // Unlikely, but be tolerant.
-        return null;
+    if (is_string($payload) || !is_array($payload)) return null;
+    if (isset($payload['error']) && is_string($payload['error'])) return $payload['error'];
+    if (count($payload) === 1) {
+        $k = array_key_first($payload); $v = $payload[$k];
+        if (is_string($k) && strtolower($k)==='error' && is_string($v)) return $v;
+        if (is_array($v) && isset($v['error']) && is_string($v['error'])) return $v['error'];
     }
-    if (is_array($payload)) {
-        if (array_key_exists('error', $payload) && is_string($payload['error'])) {
-            return $payload['error'];
-        }
-        // Sometimes the API might return an array with a single element containing 'error' => '...'
-        // e.g., [{"error":"..."}] or ["error" => "..."] in associative array form.
-        if (count($payload) === 1) {
-            $only = current($payload);
-            $onlyKey = key($payload);
-            if (is_string($onlyKey) && strtolower($onlyKey) === 'error' && is_string($only)) {
-                return $only;
-            }
-            if (is_array($only) && isset($only['error']) && is_string($only['error'])) {
-                return $only['error'];
-            }
-        }
-        // Scan shallowly for 'error'
-        foreach ($payload as $k => $v) {
-            if (is_array($v) && isset($v['error']) && is_string($v['error'])) {
-                return $v['error'];
-            }
-        }
-    }
+    foreach ($payload as $v) if (is_array($v) && isset($v['error']) && is_string($v['error'])) return $v['error'];
     return null;
+}
+
+/** Find a list of city rows in the payload; exclude the searched city; dedupe by name. */
+function collectOtherCities(array $data, string $searchedName): array {
+    $candidates = [];
+    foreach (['other_cities','cities','all_cities'] as $k) {
+        if (isset($data[$k]) && is_array($data[$k])) $candidates = array_merge($candidates, $data[$k]);
+    }
+    $stack = [$data];
+    while ($stack) {
+        $node = array_pop($stack);
+        if (!is_array($node)) continue;
+        if ($node && array_is_list($node) && looksLikeCityRow($node[0] ?? null)) {
+            $candidates = array_merge($candidates, $node);
+        }
+        foreach ($node as $v) if (is_array($v)) $stack[] = $v;
+    }
+    $out = []; $seen = [];
+    foreach ($candidates as $row) {
+        if (!looksLikeCityRow($row)) continue;
+        $n = (string)$row['name'];
+        if ($n === '' || strcasecmp($n, $searchedName) === 0) continue;
+        $key = strtolower($n); if (isset($seen[$key])) continue; $seen[$key] = true;
+        $out[] = ['name'=>$n, 'temperature'=>(string)$row['temperature']];
+    }
+    return $out;
+}
+function looksLikeCityRow($row): bool { return is_array($row) && isset($row['name'], $row['temperature']); }
+
+/** Polyfill for older PHP (<8.1) servers. */
+if (!function_exists('array_is_list')) {
+    function array_is_list(array $array): bool {
+        $i = 0; foreach ($array as $k => $_) { if ($k !== $i++) return false; } return true;
+    }
 }
