@@ -1,9 +1,5 @@
 <?php
-// ===== /index.php =====
-/**
- * Assignment 10 REST — Bootstrap (teacher-look)
- * Simple heading, "Zip Code:" label, and "Submit" button.
- */
+// ===== /index.php (updated) =====
 ?>
 <!doctype html>
 <html lang="en">
@@ -29,26 +25,26 @@
   <main class="container py-4">
     <h1 class="mb-4">Enter Zip Code to Get City Weather</h1>
 
-    <!-- Acknowledgement above the form -->
     <?php echo $acknowledgement; ?>
 
     <form method="post" class="mb-4">
       <div class="mb-3">
         <label for="zip_code" class="form-label">Zip Code:</label>
-        <input
-          type="text"
-          inputmode="numeric"
-          pattern="[0-9]*"
-          class="form-control"
-          id="zip_code"
-          name="zip_code"
-          value="<?php echo isset($_POST['zip_code']) ? htmlspecialchars($_POST['zip_code']) : ''; ?>"
-          required>
+        <div class="w-25"> <!-- Bootstrap utility width; keeps input short -->
+          <input
+            type="text"
+            inputmode="numeric"
+            pattern="[0-9]*"
+            class="form-control"
+            id="zip_code"
+            name="zip_code"
+            value="<?php echo isset($_POST['zip_code']) ? htmlspecialchars($_POST['zip_code']) : ''; ?>"
+            required>
+        </div>
       </div>
       <button type="submit" class="btn btn-primary">Submit</button>
     </form>
 
-    <!-- Output below the form -->
     <?php echo $output; ?>
   </main>
 
