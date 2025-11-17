@@ -1,8 +1,4 @@
 <?php
-// ====================== /php/rest_client.php ======================
-/**
- * Returns [ $ackHtml, $outputHtml ] with teacher-style layout.
- */
 function getWeather(): array
 {
     $zip = isset($_POST['zip_code']) ? trim((string)$_POST['zip_code']) : '';
@@ -32,7 +28,7 @@ function getWeather(): array
     }
 
     $err = extractError($data);
-    if ($err !== null) return [plainError($err), ""];  // error text above the form (black)
+    if ($err !== null) return [plainError($err), ""];  // error text above the form 
 
     $searched = $data['searched_city'] ?? null;
     if (!is_array($searched)) {
@@ -66,7 +62,7 @@ function getWeather(): array
         elseif ($t < $searchedTemp) $colder[] = $entry;
     }
 
-    // Order like the teacher: hotter DESC, colder ASC
+    // Order: hotter DESC, colder ASC
     usort($hotter, fn($a,$b) => $b['t'] <=> $a['t']);
     usort($colder, fn($a,$b) => $a['t'] <=> $b['t']);
 
@@ -94,13 +90,13 @@ function getWeather(): array
     return [$ack, $html];
 }
 
-/** Decode HTML entities (e.g., 77&deg;F → 77°F) and re-escape safe HTML. */
+/** Decode HTML entities */
 function sanitizeTemp(string $s): string {
     $decoded = html_entity_decode($s, ENT_QUOTES | ENT_HTML5, 'UTF-8');
     return htmlspecialchars($decoded, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 }
 
-/** Extract numeric temperature for comparisons (handles &deg;). */
+/** Extract numeric temperature for comparisons. */
 function parseTempToInt(?string $s): ?int {
     if ($s === null) return null;
     $decoded = html_entity_decode($s, ENT_QUOTES | ENT_HTML5, 'UTF-8');
@@ -108,17 +104,17 @@ function parseTempToInt(?string $s): ?int {
     return (int)$m[0];
 }
 
-/** Plain (black) error text shown above the form. */
+/** Plain error text shown above the form. */
 function plainError(string $msg): string {
     return '<p class="mb-2">'.$msg.'</p>';
 }
 
-/** Raw payload block (only used when JSON is malformed). */
+/** Raw payload block. */
 function rawBlock(string $raw): string {
     return '<pre class="border p-2 bg-light">'.htmlspecialchars($raw).'</pre>';
 }
 
-/** Searched city section: larger title + spacing; bulleted 3-day forecast. */
+/** Searched city section */
 function searchedCityBlock(string $name, string $temp, string $humidity, array $forecast): string {
     $items = '';
     foreach ($forecast as $f) {
@@ -203,7 +199,7 @@ function collectOtherCities(array $data, string $searchedName): array {
 }
 function looksLikeCityRow($row): bool { return is_array($row) && isset($row['name'], $row['temperature']); }
 
-/** Polyfill for older PHP (<8.1) servers. */
+
 if (!function_exists('array_is_list')) {
     function array_is_list(array $array): bool {
         $i = 0; foreach ($array as $k => $_) { if ($k !== $i++) return false; } return true;

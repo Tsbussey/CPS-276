@@ -1,11 +1,10 @@
 <?php
-// ====================== /index.php ======================
 ?>
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Enter Zip Code to Get City Weather</title>
+  <title>Weather API</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
@@ -24,7 +23,7 @@
   <main class="container py-2">
     <h1 class="mb-2">Enter Zip Code to Get City Weather</h1>
 
-    <!-- Errors/messages shown here (black text) -->
+    <!-- Errors/messages shown here  -->
     <?php echo $acknowledgement; ?>
 
     <!-- Normal-size controls; field clears after submit -->
