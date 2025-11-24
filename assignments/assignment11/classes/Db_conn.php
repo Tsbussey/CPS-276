@@ -12,6 +12,7 @@ class DatabaseConn {
       $dbName = 'tabussey';
       $dbUsr = 'tabussey';
       $dbPass = 'ubfT2R5HYPHsVfY';
+      $DB_CHARSET = 'utf8mb4';
 
       $this->conn = new PDO('mysql:host=' . $dbHost . ';dbname=' . $dbName, $dbUsr, $dbPass);
       $this->conn->setAttribute(PDO::ATTR_EMULATE_PREPARES, false); /*THIS STOPS PDO FROM ADDING SINGLE QUOTES AROUND INTEGER VALUES.*/
