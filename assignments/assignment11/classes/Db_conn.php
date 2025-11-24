@@ -9,9 +9,9 @@ class DatabaseConn {
     try {
 
       $dbHost = 'localhost';
-      $dbName = 'your_database_name';
-      $dbUsr = 'your_username';
-      $dbPass = 'your_password';
+      $dbName = 'tabussey';
+      $dbUsr = 'tabussey';
+      $dbPass = 'ubfT2R5HYPHsVfY';
 
       $this->conn = new PDO('mysql:host=' . $dbHost . ';dbname=' . $dbName, $dbUsr, $dbPass);
       $this->conn->setAttribute(PDO::ATTR_EMULATE_PREPARES, false); /*THIS STOPS PDO FROM ADDING SINGLE QUOTES AROUND INTEGER VALUES.*/
