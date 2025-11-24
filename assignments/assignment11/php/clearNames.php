@@ -1,28 +1,23 @@
-# php/clearNames.php
 <?php
-header('Content-Type: application/json');
-
+/* =========================================================================
+   File: php/clearNames.php      (DROP-IN REPLACEMENT)
+   ========================================================================= */
+header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/../classes/Pdo_methods.php';
 
-function respond($status, $payload) {
-  echo json_encode(array_merge(['masterstatus' => $status], $payload));
-  exit;
-}
+function ok(array $payload = []) { echo json_encode(array_merge(['masterstatus' => 'success'], $payload)); exit; }
+function err(string $msg)       { echo json_encode(['masterstatus' => 'error', 'msg' => $msg]); exit; }
 
 try {
   $pdo = new PdoMethods();
-
-  // Use DELETE for safety on shared hosts; then reset auto_increment.
   $del = $pdo->otherNotBinded("DELETE FROM names");
-  if ($del === 'error') {
-    respond('error', ['msg' => 'Database error clearing names.']);
-  }
+  if ($del === 'error') err('Database error clearing names.');
 
-  // Optional reset (ignore error silently if lacking privilege)
+  // Optional: reset auto-increment; ignore failure if not permitted.
   $pdo->otherNotBinded("ALTER TABLE names AUTO_INCREMENT = 1");
 
-  respond('success', ['names' => 'No names to display']);
-}
-catch (Throwable $e) {
-  respond('error', ['msg' => 'Unexpected server error.']);
+  // Your main.js will re-fetch the list; this msg is shown under #msg
+  ok(['msg' => 'All names cleared.']);
+} catch (Throwable $e) {
+  err('Unexpected server error.');
 }
