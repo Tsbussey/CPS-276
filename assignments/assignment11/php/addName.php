@@ -1,19 +1,16 @@
 <?php
-/* =========================================================================
-   File: php/addName.php         (DROP-IN REPLACEMENT)
-   ========================================================================= */
 header('Content-Type: application/json; charset=utf-8');
+ob_start();
 require_once __DIR__ . '/../classes/Pdo_methods.php';
 
-function ok(array $payload = []) { echo json_encode(array_merge(['masterstatus' => 'success'], $payload)); exit; }
-function err(string $msg)       { echo json_encode(['masterstatus' => 'error', 'msg' => $msg]); exit; }
+function ok(array $p = []) { ob_end_clean(); echo json_encode(['masterstatus'=>'success'] + $p); exit; }
+function err(string $m)    { ob_end_clean(); echo json_encode(['masterstatus'=>'error','msg'=>$m]); exit; }
 
 try {
   $data = json_decode(file_get_contents('php://input'), true);
   if (!is_array($data) || !isset($data['name'])) err('Invalid request.');
 
   $raw = trim((string)$data['name']);
-  // Require "First Last" (two tokens) because the assignment shows that format
   $parts = preg_split('/\s+/', $raw, 2, PREG_SPLIT_NO_EMPTY);
   if (!$parts || count($parts) < 2) err('Enter first and last name separated by a space.');
 
@@ -30,8 +27,6 @@ try {
   );
   if ($res === 'error') err('Database error adding name.');
 
-  // Your main.js re-calls displayNames(); just return a message here.
   ok(['msg' => "Added: {$formatted}"]);
-} catch (Throwable $e) {
-  err('Unexpected server error.');
 }
+catch (Throwable $e) { err('Unexpected server error.'); }
