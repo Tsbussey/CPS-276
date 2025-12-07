@@ -1,5 +1,6 @@
 <?php
-class Pdo_methods extends Db_conn {
+require_once __DIR__ . '/Db_conn.php';  // <-- FIXED
+class PdoMethods extends Db_conn{
 
   public function createUsersTableIfMissing() {
     $sql = "CREATE TABLE IF NOT EXISTS users (

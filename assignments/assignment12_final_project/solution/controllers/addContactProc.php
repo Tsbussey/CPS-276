@@ -1,6 +1,6 @@
 <?php
 declare(strict_types=1);
-require_once __DIR__ . '/../classes/PdoMethods.php';
+require_once __DIR__ . '/../classes/Pdo_methods.php';
 function insert_contact(array $data): string {
   $pdo = new PdoMethods();
   $sql = "INSERT INTO contacts (fname,lname,address,city,state,phone,email,dob,contacts,age)

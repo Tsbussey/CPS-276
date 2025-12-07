@@ -1,6 +1,6 @@
 <?php
 declare(strict_types=1);
-require_once __DIR__ . '/../classes/PdoMethods.php';
+require_once __DIR__ . '/../classes/Pdo_methods.php';
 function handle_login(): array {
   $pdo = new PdoMethods();
   $email = trim($_POST['email'] ?? '');
