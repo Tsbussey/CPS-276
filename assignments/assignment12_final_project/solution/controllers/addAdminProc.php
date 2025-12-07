@@ -1,6 +1,9 @@
 <?php
 declare(strict_types=1);
-require_once __DIR__ . '/../classes/PdoMethods.php';
+
+set_include_path(__DIR__ . '/../classes' . PATH_SEPARATOR . get_include_path());
+require_once __DIR__ . '/../classes/Pdo_methods.php';
+
 function insert_admin(string $name, string $email, string $hash, string $status): string {
   $pdo = new PdoMethods();
   $sql = "INSERT INTO admins (name,email,password,status) VALUES (:name,:email,:password,:status)";

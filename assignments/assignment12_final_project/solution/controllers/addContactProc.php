@@ -1,6 +1,9 @@
 <?php
 declare(strict_types=1);
+
+set_include_path(__DIR__ . '/../classes' . PATH_SEPARATOR . get_include_path());
 require_once __DIR__ . '/../classes/Pdo_methods.php';
+
 function insert_contact(array $data): string {
   $pdo = new PdoMethods();
   $sql = "INSERT INTO contacts (fname,lname,address,city,state,phone,email,dob,contacts,age)
@@ -12,5 +15,5 @@ function insert_contact(array $data): string {
     [":email",$data['email'],"str"],[":dob",$data['dob'],"str"],
     [":contacts",$data['contacts'],"str"],[":age",$data['age'],"str"],
   ];
-  return $pdo->otherBinded($sql,$bindings); // 'noerror' on success
+  return $pdo->otherBinded($sql,$bindings);
 }

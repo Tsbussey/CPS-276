@@ -1,6 +1,9 @@
 <?php
 declare(strict_types=1);
+
+set_include_path(__DIR__ . '/../classes' . PATH_SEPARATOR . get_include_path()); // make /classes resolvable
 require_once __DIR__ . '/../classes/Pdo_methods.php';
+
 function handle_login(): array {
   $pdo = new PdoMethods();
   $email = trim($_POST['email'] ?? '');
