@@ -12,16 +12,25 @@ require_once __DIR__ . '/../classes/Pdo_methods.php';
 $pdo = new PdoMethods();
 
 $ack  = null;   // success message
-$msg  = null;   // generic error
+$msg  = null;   // generic DB/unexpected error
 $dup  = false;  // duplicate email flag
 
 // Sticky values
 $data = [
-  'fname' => '',
-  'lname' => '',
-  'email' => '',
+  'fname'    => '',
+  'lname'    => '',
+  'email'    => '',
   'password' => '',
-  'status' => ''
+  'status'   => '',
+];
+
+// Field-level errors
+$errors = [
+  'fname'    => '',
+  'lname'    => '',
+  'email'    => '',
+  'password' => '',
+  'status'   => '',
 ];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -32,21 +41,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $data['password'] = trim($_POST['password'] ?? '');
   $data['status']   = trim($_POST['status'] ?? '');
 
-  // Basic validation
+  // Basic validation -> set per-field messages
   $valid = true;
 
-  if ($data['fname'] === '' || $data['lname'] === '')    { $valid = false; $msg = 'Please provide first and last name.'; }
-  if ($valid && !filter_var($data['email'], FILTER_VALIDATE_EMAIL)) { $valid = false; $msg = 'Please provide a valid email.'; }
-  if ($valid && $data['password'] === '')                 { $valid = false; $msg = 'Please provide a password.'; }
-  if ($valid && !in_array($data['status'], ['admin','staff'], true)) {
-    $valid = false; $msg = 'Please select a valid status.';
+  if ($data['fname'] === '') {
+    $valid = false;
+    $errors['fname'] = 'You must enter a valid first name';
+  }
+
+  if ($data['lname'] === '') {
+    $valid = false;
+    $errors['lname'] = 'You must enter a valid last name';
+  }
+
+  if ($data['email'] === '' || !filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+    $valid = false;
+    $errors['email'] = 'You must enter a valid email.';
+  }
+
+  if ($data['password'] === '') {
+    $valid = false;
+    $errors['password'] = 'You must enter a valid password.';
+  }
+
+  if ($data['status'] === '' || !in_array($data['status'], ['admin', 'staff'], true)) {
+    $valid = false;
+    $errors['status'] = 'You must select a status.';
   }
 
   if ($valid) {
     try {
       // duplicate?
       $sql = "SELECT 1 FROM admins WHERE email = :email LIMIT 1";
-      $res = $pdo->selectBinded($sql, [[":email",$data['email'],"str"]]);
+      $res = $pdo->selectBinded($sql, [[":email", $data['email'], "str"]]);
+
       if ($res === 'error') {
         $msg = 'There was an error checking the email.';
       } elseif (!empty($res)) {
@@ -58,18 +86,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $ins = "INSERT INTO admins (fname, lname, email, password, status)
                 VALUES (:fname, :lname, :email, :password, :status)";
         $bind = [
-          [":fname",$data['fname'],"str"],
-          [":lname",$data['lname'],"str"],
-          [":email",$data['email'],"str"],
-          [":password",$hash,"str"],
-          [":status",$data['status'],"str"],
+          [":fname",    $data['fname'],    "str"],
+          [":lname",    $data['lname'],    "str"],
+          [":email",    $data['email'],    "str"],
+          [":password", $hash,             "str"],
+          [":status",   $data['status'],   "str"],
         ];
         $r = $pdo->otherBinded($ins, $bind);
 
         if ($r === 'noerror') {
           $ack = 'Administrator added';
           // clear sticky values after success
-          $data = ['fname'=>'','lname'=>'','email'=>'','password'=>'','status'=>''];
+          $data = ['fname' => '', 'lname' => '', 'email' => '', 'password' => '', 'status' => ''];
         } else {
           $msg = 'There was an error adding the administrator.';
         }
@@ -80,7 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   }
 }
 
-render_page('Add Admin', function () use (&$data, $ack, $msg, $dup) {
+render_page('Add Admin', function () use (&$data, $ack, $msg, $dup, $errors) {
 ?>
   <!-- Hide the caret but keep the select fully functional -->
   <style>
@@ -109,37 +137,57 @@ render_page('Add Admin', function () use (&$data, $ack, $msg, $dup) {
 
   <form method="post" novalidate>
     <div class="row g-3">
+      <!-- First Name -->
       <div class="col-md-6">
         <label for="fname" class="form-label">First Name</label>
         <input type="text" class="form-control" id="fname" name="fname"
                value="<?= htmlspecialchars($data['fname']) ?>">
+        <?php if ($errors['fname']): ?>
+          <div class="text-danger small mt-1"><?= htmlspecialchars($errors['fname']) ?></div>
+        <?php endif; ?>
       </div>
 
+      <!-- Last Name -->
       <div class="col-md-6">
         <label for="lname" class="form-label">Last Name</label>
         <input type="text" class="form-control" id="lname" name="lname"
                value="<?= htmlspecialchars($data['lname']) ?>">
+        <?php if ($errors['lname']): ?>
+          <div class="text-danger small mt-1"><?= htmlspecialchars($errors['lname']) ?></div>
+        <?php endif; ?>
       </div>
 
+      <!-- Email -->
       <div class="col-md-6">
         <label for="email" class="form-label">Email</label>
         <input type="email" class="form-control" id="email" name="email"
                value="<?= htmlspecialchars($data['email']) ?>">
+        <?php if ($errors['email']): ?>
+          <div class="text-danger small mt-1"><?= htmlspecialchars($errors['email']) ?></div>
+        <?php endif; ?>
       </div>
 
+      <!-- Password -->
       <div class="col-md-3">
         <label for="password" class="form-label">Password</label>
         <input type="password" class="form-control" id="password" name="password"
                value="<?= htmlspecialchars($data['password']) ?>">
+        <?php if ($errors['password']): ?>
+          <div class="text-danger small mt-1"><?= htmlspecialchars($errors['password']) ?></div>
+        <?php endif; ?>
       </div>
 
+      <!-- Status -->
       <div class="col-md-3">
         <label for="status" class="form-label">Status</label>
         <select id="status" name="status" class="form-select no-caret">
           <option value="">Please Select a Status</option>
-          <option value="admin" <?= $data['status']==='admin' ? 'selected' : '' ?>>Admin</option>
-          <option value="staff" <?= $data['status']==='staff' ? 'selected' : '' ?>>Staff</option>
+          <option value="admin" <?= $data['status'] === 'admin' ? 'selected' : '' ?>>Admin</option>
+          <option value="staff" <?= $data['status'] === 'staff' ? 'selected' : '' ?>>Staff</option>
         </select>
+        <?php if ($errors['status']): ?>
+          <div class="text-danger small mt-1"><?= htmlspecialchars($errors['status']) ?></div>
+        <?php endif; ?>
       </div>
 
       <div class="col-12">
