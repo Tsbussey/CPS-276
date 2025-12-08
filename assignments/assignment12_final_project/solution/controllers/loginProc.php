@@ -1,40 +1,51 @@
 <?php
 // ==============================
 // file: solution/controllers/loginProc.php
-// (adds include_path; safe PDO fallback)
 // ==============================
 set_include_path(__DIR__ . '/../classes' . PATH_SEPARATOR . get_include_path());
 require_once __DIR__ . '/../classes/Pdo_methods.php';
-require_once __DIR__ . '/../classes/Db_conn.php';
 
-function handle_login(){
-  $email = trim($_POST['email'] ?? '');
-  $password = (string)($_POST['password'] ?? '');
-  if ($email === '' || $password === '') return ['ok'=>false,'msg'=>'Invalid credentials'];
+function handle_login(array $post): array {
+  $msg = '';
+  $ok  = false;
 
-  $sql = "SELECT id,name,email,password,status FROM admins WHERE email = :email LIMIT 1";
-  $bindings = [[":email",$email,"str"]];
-  $row = null;
+  $email = trim($post['email'] ?? '');
+  $pass  = (string)($post['password'] ?? '');
 
-  try {
-    $pdoMethods = new PdoMethods();
-    if (method_exists($pdoMethods, 'selectBinded')) {
-      $res = $pdoMethods->selectBinded($sql, $bindings);
-      if ($res !== 'error' && !empty($res)) { $row = $res[0]; }
-    } else {
-      $pdo = (new Db_conn())->dbOpen();
-      $stmt = $pdo->prepare($sql);
-      $stmt->bindValue(':email', $email, PDO::PARAM_STR);
-      $stmt->execute();
-      $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
-    }
-  } catch (Throwable $e) {
-    return ['ok'=>false,'msg'=>'Invalid credentials'];
+  if ($email === '' || $pass === '') {
+    return ['ok' => false, 'msg' => 'Login credentials incorrect'];
   }
 
-  if (!$row) return ['ok'=>false,'msg'=>'Invalid credentials'];
-  if (!password_verify($password, $row['password'])) return ['ok'=>false,'msg'=>'Invalid credentials'];
+  $pdo = new PdoMethods();
+  // Your admins table uses: id, fname, lname, email, password, status
+  $sql = "SELECT id, fname, lname, email, password, status
+          FROM admins
+          WHERE email = :email
+          LIMIT 1";
+  $rows = $pdo->selectBinded($sql, [[":email",$email,"str"]]);
 
-  $_SESSION['user'] = ['id'=>(int)$row['id'],'name'=>$row['name'],'email'=>$row['email'],'status'=>$row['status']];
-  return ['ok'=>true];
+  if ($rows === 'error' || empty($rows)) {
+    return ['ok' => false, 'msg' => 'Login credentials incorrect'];
+  }
+
+  $row = $rows[0];
+
+  // If you stored plain text passwords for the assignment, compare directly.
+  // If you used password_hash(), keep the verify() line and remove the direct compare.
+  $passwordMatches =
+      password_verify($pass, $row['password']) || $pass === $row['password'];
+
+  if (!$passwordMatches) {
+    return ['ok' => false, 'msg' => 'Login credentials incorrect'];
+  }
+
+  // Success: set session
+  if (session_status() !== PHP_SESSION_ACTIVE) { session_start(); }
+  $_SESSION['auth']  = true;
+  $_SESSION['uid']   = (int)$row['id'];
+  $_SESSION['name']  = trim($row['fname'] . ' ' . $row['lname']);
+  $_SESSION['email'] = $row['email'];
+  $_SESSION['role']  = $row['status']; // e.g., 'admin' or 'staff'
+
+  return ['ok' => true, 'msg' => ''];
 }

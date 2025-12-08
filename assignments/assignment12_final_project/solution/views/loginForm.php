@@ -1,52 +1,41 @@
 <?php
 // ==============================
 // file: solution/views/loginForm.php
-// (Bootstrap-only; matches requested behavior)
 // ==============================
+require_once __DIR__ . '/../includes/security.php';
+
 require_once __DIR__ . '/../controllers/loginProc.php';
-render_page('Login', function () {
-  $emailVal  = '';
-  $errors    = ['email' => '', 'password' => ''];
-  $showBanner = false;
 
-  if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $emailVal = trim($_POST['email'] ?? '');
-    $pwdVal   = (string)($_POST['password'] ?? '');
-    if ($emailVal === '' || !filter_var($emailVal, FILTER_VALIDATE_EMAIL)) { $errors['email'] = 'You must enter a valid email'; }
-    if ($pwdVal === '') { $errors['password'] = 'You must enter a password'; }
-    if ($errors['email'] === '' && $errors['password'] === '') {
-      $res = handle_login();
-      if ($res['ok']) { header('Location: index.php?page=welcome'); exit; }
-      $showBanner = true; // only this line should show for wrong creds
-    }
+$msg = null;
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+  $result = handle_login($_POST);
+
+  if ($result['ok'] === true) {
+    header('Location: index.php?page=welcome');
+    exit;
+  } else {
+    // keep it as a simple string so the view never treats it like an array
+    $msg = $result['msg'] ?? 'Login credentials incorrect';
   }
+}
 
-  $emailInvalid    = $errors['email']    ? ' is-invalid' : '';
-  $passwordInvalid = $errors['password'] ? ' is-invalid' : '';
-  ?>
-  <div class="row">
-    <div class="col-12 col-md-10 col-lg-8 mx-auto">
-      <h1 class="display-5 fw-bold mb-2">Login</h1>
-      <?php if ($showBanner): ?>
-        <p class="mb-3">Login credentials incorrect</p>
-      <?php else: ?>
-        <p class="text-muted mb-3">Enter your credentials to continue.</p>
-      <?php endif; ?>
+render_page('Login', function () use ($msg) { ?>
+  <h1 class="mb-3">Login</h1>
 
-      <form method="post" novalidate>
-        <div class="mb-3">
-          <label class="form-label" for="email">Email</label>
-          <input type="email" class="form-control<?= $emailInvalid ?>" id="email" name="email" value="<?= htmlspecialchars($emailVal) ?>">
-          <?php if ($errors['email']): ?><div class="invalid-feedback d-block"><?= htmlspecialchars($errors['email']) ?></div><?php endif; ?>
-        </div>
-        <div class="mb-4">
-          <label class="form-label" for="password">Password</label>
-          <input type="password" class="form-control<?= $passwordInvalid ?>" id="password" name="password">
-          <?php if ($errors['password']): ?><div class="invalid-feedback d-block"><?= htmlspecialchars($errors['password']) ?></div><?php endif; ?>
-        </div>
-        <button class="btn btn-primary">Login</button>
-      </form>
+  <?php if (!empty($msg)): ?>
+    <div class="alert alert-warning"><?= htmlspecialchars($msg) ?></div>
+  <?php endif; ?>
+
+  <form method="post" novalidate>
+    <div class="mb-3">
+      <label class="form-label" for="email">Email</label>
+      <input class="form-control" type="email" name="email" id="email" required>
     </div>
-  </div>
-  <?php
-});
+    <div class="mb-3">
+      <label class="form-label" for="password">Password</label>
+      <input class="form-control" type="password" name="password" id="password" required>
+    </div>
+    <button class="btn btn-primary">Login</button>
+  </form>
+<?php });
