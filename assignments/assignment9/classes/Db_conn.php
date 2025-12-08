@@ -1,33 +1,23 @@
 <?php
-
+// ==============================
+// file: solution/classes/Db_conn.php
+// (book class; set your DB creds below)
+// ==============================
 class Db_conn {
-  protected $DB_HOST = 'localhost';
-  protected $DB_NAME = 'tabussey';
-  protected $DB_USER = 'tabussey';
-  protected $DB_PASS =  'ubfT2R5HYPHsVfY';
-  protected $DB_CHARSET = 'utf8mb4';
-
-  protected function dbOpen() {
-    $dsn = "mysql:host={$this->DB_HOST};dbname={$this->DB_NAME};charset={$this->DB_CHARSET}";
-    $options = array(
-      PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-      PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-      PDO::ATTR_EMULATE_PREPARES => false,
-    );
+  private $conn;
+  public function dbOpen(){
     try {
-      return new PDO($dsn, $this->DB_USER, $this->DB_PASS, $options);
-    } catch (Exception $e) {
-      error_log("DB connection failed: " . $e->getMessage());
-      die("Database connection failed.");
-    }
-  }
-
-  protected function dbClose(&$pdo = null, &$stmt = null) {
-    $stmt = null;
-    $pdo = null;
+      $dbHost = 'localhost';
+      $dbName = 'cps276_final'; // TODO: your DB name
+      $dbUsr  = 'root';         // TODO: your DB user
+      $dbPass = '';             // TODO: your DB password
+      $this->conn = new PDO('mysql:host='.$dbHost.';dbname='.$dbName, $dbUsr, $dbPass);
+      $this->conn->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
+      $this->conn->setAttribute(PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, true);
+      $this->conn->setAttribute(PDO::ATTR_AUTOCOMMIT, true);
+      $this->conn->setAttribute(PDO::MYSQL_ATTR_LOCAL_INFILE, true);
+      $this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+      return $this->conn;
+    } catch(PDOException $e) { echo $e->getMessage(); }
   }
 }
-
-    $dbName = 'tabussey';
-        $dbUser = 'tabussey';
-        $dbPass = 'ubfT2R5HYPHsVfY';

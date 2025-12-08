@@ -1,7 +1,9 @@
 <?php
-declare(strict_types=1);
+// ==============================
+// file: solution/controllers/deleteAdminProc.php
+// ==============================
 require_once __DIR__ . '/../classes/Db_conn.php';
-function process_delete_admins(): string {
+function process_delete_admins(){
   if (empty($_POST['ids'])) return 'noop';
   $ids = array_map('intval', $_POST['ids']); if (!$ids) return 'noop';
   $in = implode(',', array_fill(0, count($ids), '?'));

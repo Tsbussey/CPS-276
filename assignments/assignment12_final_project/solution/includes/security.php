@@ -1,9 +1,11 @@
 <?php
-declare(strict_types=1);
-function require_login(): void {
-  if (!isset($_SESSION['user'])) { header("Location: index.php?page=login"); exit; }
+// ==============================
+// file: solution/includes/security.php
+// ==============================
+function require_login() {
+  if (empty($_SESSION['user'])) { header('Location: index.php?page=login'); exit; }
 }
-function require_admin(): void {
+function require_admin() {
   require_login();
-  if (($_SESSION['user']['status'] ?? '') !== 'admin') { header("Location: index.php?page=login"); exit; }
+  if (($_SESSION['user']['status'] ?? '') !== 'admin') { header('Location: index.php?page=login'); exit; }
 }

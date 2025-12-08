@@ -1,5 +1,7 @@
 <?php
-declare(strict_types=1);
+// ==============================
+// file: solution/views/addAdminForm.php
+// ==============================
 require_once __DIR__ . '/../includes/security.php'; require_admin();
 require_once __DIR__ . '/../classes/StickyForm.php';
 require_once __DIR__ . '/../controllers/addAdminProc.php';

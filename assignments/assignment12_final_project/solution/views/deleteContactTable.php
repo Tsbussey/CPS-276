@@ -1,5 +1,7 @@
 <?php
-declare(strict_types=1);
+// ==============================
+// file: solution/views/deleteContactsTable.php
+// ==============================
 require_once __DIR__ . '/../includes/security.php'; require_login();
 require_once __DIR__ . '/../classes/Db_conn.php';
 require_once __DIR__ . '/../controllers/deleteContactProc.php';

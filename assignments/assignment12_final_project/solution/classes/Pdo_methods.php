@@ -1,66 +1,72 @@
 <?php
-require_once __DIR__ . '/Db_conn.php';  // <-- FIXED
-class PdoMethods extends Db_conn{
+// ==============================
+// file: solution/classes/Pdo_methods.php
+// (book class; filename uses underscore; do not modify logic)
+// ==============================
+require_once "Db_conn.php";
+class PdoMethods extends Db_conn {
+  private $sth; private $conn; private $db; private $error;
 
-  public function createUsersTableIfMissing() {
-    $sql = "CREATE TABLE IF NOT EXISTS users (
-              id INT AUTO_INCREMENT PRIMARY KEY,
-              first_name VARCHAR(100) NOT NULL,
-              last_name VARCHAR(100) NOT NULL,
-              email VARCHAR(255) NOT NULL UNIQUE,
-              password_hash VARCHAR(255) NOT NULL,
-              created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
-    $pdo = $this->dbOpen();
-    $stmt = null;
-    try {
-      $pdo->exec($sql);
-    } catch (Exception $e) {
-      error_log($e->getMessage());
+  public function selectBinded($sql, $bindings){
+    $this->error = false;
+    try{
+      $this->db_connection();
+      $this->sth = $this->conn->prepare($sql);
+      $this->createBinding($bindings);
+      $this->sth->execute();
+    } catch(PDOException $e){
+      echo $e->getMessage(); return 'error';
     }
-    $this->dbClose($pdo, $stmt);
+    $this->conn = null;
+    return $this->sth->fetchAll(PDO::FETCH_ASSOC);
   }
-
-  public function selectOne($sql, $params = array()) {
-    $pdo = $this->dbOpen();
-    $stmt = null;
-    try {
-      $stmt = $pdo->prepare($sql);
-      $stmt->execute($params);
-      $row = $stmt->fetch();
-      return $row ? $row : null;
-    } catch (Exception $e) {
-      error_log($e->getMessage());
-      return null;
+  public function selectNotBinded($sql){
+    $this->error = false;
+    try{
+      $this->db_connection();
+      $this->sth = $this->conn->prepare($sql);
+      $this->sth->execute();
+    } catch (PDOException $e){
+      echo $e->getMessage(); return 'error';
     }
-    $this->dbClose($pdo, $stmt);
+    $this->conn = null;
+    return $this->sth->fetchAll(PDO::FETCH_ASSOC);
   }
-
-  public function selectAll($sql, $params = array()) {
-    $pdo = $this->dbOpen();
-    $stmt = null;
-    try {
-      $stmt = $pdo->prepare($sql);
-      $stmt->execute($params);
-      return $stmt->fetchAll();
-    } catch (Exception $e) {
-      error_log($e->getMessage());
-      return array();
+  public function otherBinded($sql, $bindings){
+    $this->error = false;
+    try{
+      $this->db_connection();
+      $this->sth = $this->conn->prepare($sql);
+      $this->createBinding($bindings);
+      $this->sth->execute();
+    } catch(PDOException $e) {
+      echo $e->getMessage(); return 'error';
     }
-    $this->dbClose($pdo, $stmt);
+    $this->conn = null;
+    return 'noerror';
   }
-
-  public function execute($sql, $params = array()) {
-    $pdo = $this->dbOpen();
-    $stmt = null;
-    try {
-      $stmt = $pdo->prepare($sql);
-      $stmt->execute($params);
-      return $stmt->rowCount();
-    } catch (Exception $e) {
-      error_log($e->getMessage());
-      return 0;
+  public function otherNotBinded($sql){
+    $this->error = false;
+    try{
+      $this->db_connection();
+      $this->sth = $this->conn->prepare($sql);
+      $this->sth->execute();
+    } catch (PDOException $e){
+      echo $e->getMessage(); return 'error';
     }
-    $this->dbClose($pdo, $stmt);
+    $this->conn = null;
+    return 'noerror';
+  }
+  private function db_connection(){
+    $this->db = new Db_conn();
+    $this->conn = $this->db->dbOpen();
+  }
+  private function createBinding($bindings){
+    foreach($bindings as $value){
+      switch($value[2]){
+        case "str": $this->sth->bindParam($value[0], $value[1], PDO::PARAM_STR); break;
+        case "int": $this->sth->bindParam($value[0], $value[1], PDO::PARAM_INT); break;
+      }
+    }
   }
 }

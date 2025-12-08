@@ -1,5 +1,7 @@
 <?php
-declare(strict_types=1);
+// ==============================
+// file: solution/views/deleteAdminsTable.php
+// ==============================
 require_once __DIR__ . '/../includes/security.php'; require_admin();
 require_once __DIR__ . '/../classes/Db_conn.php';
 require_once __DIR__ . '/../controllers/deleteAdminProc.php';

@@ -1,86 +1,81 @@
 <?php
-declare(strict_types=1);
-require_once __DIR__ . '/../includes/security.php'; require_login();
-require_once __DIR__ . '/../classes/StickyForm.php';
-require_once __DIR__ . '/../controllers/addContactProc.php';
+// /views/addAdminForm.php
+// Removes visual stars; preserves required validation and Bootstrap styling.
 
-$sticky = new StickyForm();
-$formConfig = [
-  'masterStatus' => ['error'=>false],
-  'fname'   => ['type'=>'text','regex'=>'name','label'=>'*First Name','name'=>'fname','id'=>'fname','required'=>true,'value'=>'','error'=>''],
-  'lname'   => ['type'=>'text','regex'=>'name','label'=>'*Last Name','name'=>'lname','id'=>'lname','required'=>true,'value'=>'','error'=>''],
-  'address' => ['type'=>'text','regex'=>'address','label'=>'*Address','name'=>'address','id'=>'address','required'=>true,'value'=>'','error'=>''],
-  'city'    => ['type'=>'text','regex'=>'name','label'=>'*City','name'=>'city','id'=>'city','required'=>true,'value'=>'','error'=>''],
-  'state'   => ['type'=>'select','label'=>'*State','name'=>'state','id'=>'state','required'=>true,'selected'=>'','error'=>'',
-                'options'=>[''=>'Please Select','Michigan'=>'Michigan','Ohio'=>'Ohio','Indiana'=>'Indiana','Illinois'=>'Illinois','Wisconsin'=>'Wisconsin']],
-  'phone'   => ['type'=>'text','regex'=>'phone','label'=>'*Phone (999.999.9999)','name'=>'phone','id'=>'phone','required'=>true,'value'=>'','error'=>''],
-  'email'   => ['type'=>'text','regex'=>'email','label'=>'*Email','name'=>'email','id'=>'email','required'=>true,'value'=>'','error'=>''],
-  'dob'     => ['type'=>'text','regex'=>'dob','label'=>'*Date of Birth (mm/dd/yyyy)','name'=>'dob','id'=>'dob','required'=>true,'value'=>'','error'=>''],
-  'age'     => ['type'=>'radio','label'=>'*Choose an Age Range','name'=>'age','id'=>'age','required'=>true,'error'=>'',
-                'options'=>[
-                  ['label'=>'0-17','value'=>'0-17','checked'=>false],
-                  ['label'=>'18-30','value'=>'18-30','checked'=>false],
-                  ['label'=>'30-50','value'=>'30-50','checked'=>false],
-                  ['label'=>'50+','value'=>'50+','checked'=>false],
-                ]],
-  'contact' => ['type'=>'checkbox','label'=>'Select One or More Options','name'=>'contact','id'=>'contact','required'=>false,'error'=>'',
-                'options'=>[
-                  ['label'=>'newsletter','value'=>'newsletter','checked'=>false],
-                  ['label'=>'email','value'=>'email','checked'=>false],
-                  ['label'=>'text','value'=>'text','checked'=>false],
-                ]],
+require_once __DIR__ . '/../includes/security.php';
+if (!userIsAdmin()) { header('Location: index.php?page=login'); exit; }
+
+$sticky = $sticky ?? [
+  'fname' => '', 'lname' => '', 'email' => '', 'status' => '', 'message' => '',
 ];
+?>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Add Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    /* WHY: Some templates inject "*" via CSS. Neutralize them. */
+    label.required::after,
+    .form-label.required::after,
+    [data-required="true"]::after { content: none !important; }
+  </style>
+</head>
+<body class="p-4">
+  <div class="container">
+    <nav class="mb-3">
+      <a class="me-3" href="index.php?page=addContact">Add Contact</a>
+      <a class="me-3" href="index.php?page=deleteContacts">Delete Contact(s)</a>
+      <a class="me-3 fw-bold" href="index.php?page=addAdmin">Add Admin</a>
+      <a class="me-3" href="index.php?page=deleteAdmins">Delete Admin(s)</a>
+      <a href="index.php?page=logout">Logout</a>
+    </nav>
 
-$ack = null; $msg = null;
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-  $formConfig = $sticky->validateForm($_POST, $formConfig);
-  if (!$sticky->hasErrors() && $formConfig['masterStatus']['error'] == false) {
-    $contactsSelected = [];
-    foreach ($formConfig['contact']['options'] as $opt){ if ($opt['checked']) $contactsSelected[] = $opt['value']; }
-    $data = [
-      'fname'=>$formConfig['fname']['value'],
-      'lname'=>$formConfig['lname']['value'],
-      'address'=>$formConfig['address']['value'],
-      'city'=>$formConfig['city']['value'],
-      'state'=>$formConfig['state']['selected'],
-      'phone'=>$formConfig['phone']['value'],
-      'email'=>$formConfig['email']['value'],
-      'dob'=>$formConfig['dob']['value'],
-      'contacts'=>implode(',', $contactsSelected),
-      'age'=>array_values(array_filter(array_map(fn($o)=>$o['checked'] ? $o['value'] : null, $formConfig['age']['options'])))[0] ?? '',
-    ];
-    $res = insert_contact($data);
-    if ($res === 'noerror') { $ack = 'Contact Information Added'; }
-    else { $msg = 'There was an error adding the record'; }
-  }
-}
+    <h2 class="mb-3">Add Admin</h2>
 
-render_page('Add Contact', function () use ($sticky, &$formConfig, $ack, $msg) {
-  if ($ack) {
-    foreach ($formConfig as $k=>&$e){
-      if ($k==='masterStatus') continue;
-      $e['value']=''; $e['error']='';
-      if(isset($e['selected'])) $e['selected']='';
-      if(isset($e['options'])){ foreach($e['options'] as &$o){ $o['checked']=false; } }
-    }
-  } ?>
-  <?php if ($ack): ?><div class="alert alert-success"><?= $ack ?></div><?php endif; ?>
-  <?php if ($msg): ?><div class="alert alert-danger"><?= $msg ?></div><?php endif; ?>
-  <h1 class="h3 mb-3">Add Contact</h1>
-  <form method="post" novalidate>
-    <div class="row g-3">
-      <div class="col-md-6"><?= $sticky->renderInput($formConfig['fname']); ?></div>
-      <div class="col-md-6"><?= $sticky->renderInput($formConfig['lname']); ?></div>
-      <div class="col-12"><?= $sticky->renderInput($formConfig['address']); ?></div>
-      <div class="col-md-4"><?= $sticky->renderInput($formConfig['city']); ?></div>
-      <div class="col-md-4"><?= $sticky->renderSelect($formConfig['state']); ?></div>
-      <div class="col-md-4"><?= $sticky->renderInput($formConfig['phone']); ?></div>
-      <div class="col-md-4"><?= $sticky->renderInput($formConfig['email']); ?></div>
-      <div class="col-md-4"><?= $sticky->renderInput($formConfig['dob']); ?></div>
-      <div class="col-12"><?= $sticky->renderRadio($formConfig['age']); ?></div>
-      <div class="col-12"><?= $sticky->renderCheckboxGroup($formConfig['contact']); ?></div>
-      <div class="col-12"><button class="btn btn-primary">Add Contact</button></div>
-    </div>
-  </form>
-  <?php
-});
+    <?php if (!empty($sticky['message'])): ?>
+      <div class="alert alert-info"><?= htmlspecialchars($sticky['message']) ?></div>
+    <?php endif; ?>
+
+    <form method="post" action="index.php?page=addAdmin" novalidate>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label for="fname" class="form-label">First Name</label>
+          <input id="fname" name="fname" type="text" class="form-control" required
+                 value="<?= htmlspecialchars($sticky['fname']) ?>">
+        </div>
+        <div class="col-md-6">
+          <label for="lname" class="form-label">Last Name</label>
+          <input id="lname" name="lname" type="text" class="form-control" required
+                 value="<?= htmlspecialchars($sticky['lname']) ?>">
+        </div>
+
+        <div class="col-md-6">
+          <label for="email" class="form-label">Email</label>
+          <input id="email" name="email" type="email" class="form-control" required
+                 value="<?= htmlspecialchars($sticky['email']) ?>">
+        </div>
+        <div class="col-md-6">
+          <label for="password" class="form-label">Password</label>
+          <input id="password" name="password" type="password" class="form-control" required>
+        </div>
+
+        <div class="col-md-6">
+          <label for="status" class="form-label">Status</label>
+          <select id="status" name="status" class="form-select" required>
+            <option value="" <?= $sticky['status']===''?'selected':''; ?> disabled>Please Select a Status</option>
+            <option value="staff" <?= $sticky['status']==='staff'?'selected':''; ?>>staff</option>
+            <option value="admin" <?= $sticky['status']==='admin'?'selected':''; ?>>admin</option>
+          </select>
+        </div>
+
+        <div class="col-12">
+          <button type="submit" class="btn btn-primary">Add Admin</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</body>
+</html>

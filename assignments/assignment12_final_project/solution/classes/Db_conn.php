@@ -1,23 +1,29 @@
 <?php
-class Db_conn { 
-  private $conn;
-  /* THIS CLASS CONNECTS TO THE DATABASE ONLY AND SETS UP THE ATTRIBUTE PARAMETERS */
-  public function dbOpen(){
+// solution/classes/Db_conn.php
+class Db_conn {
+  private static ?PDO $pdo = null;
+
+  public function dbOpen(): ?PDO {
+    if (self::$pdo instanceof PDO) return self::$pdo;
+
+    // Force TCP so MySQL uses password auth (not unix_socket)
+    $dbHost = 'localhost';
+    $dbName = 'tabussey';
+    $dbUser = 'tabussey';        // or the new user they create, e.g. tabussey_web
+    $dbPass = 'ubfT2R5HYPHsVfY';      // fill in AFTER they give you a password
+
+    $dsn = "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4";
+    $opts = [
+      PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+      PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+      PDO::ATTR_EMULATE_PREPARES   => false,
+    ];
     try {
-      $dbHost = 'localhost';
-      $dbName = 'tabussey';   
-      $dbUsr  = 'tabussey';      
-      $dbPass = 'ubfT2R5HYPHsVfY';     
-      $this->conn = new PDO('mysql:host=' . $dbHost . ';dbname=' . $dbName, $dbUsr, $dbPass);
-      $this->conn->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
-      $this->conn->setAttribute(PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, true);
-      $this->conn->setAttribute(PDO::ATTR_AUTOCOMMIT, true);
-      $this->conn->setAttribute(PDO::MYSQL_ATTR_LOCAL_INFILE, true);
-      $this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-      return $this->conn;
-    } catch(PDOException $e) {
-      echo $e->getMessage(); 
+      self::$pdo = new PDO($dsn, $dbUser, $dbPass, $opts);
+      return self::$pdo;
+    } catch (PDOException $e) {
+      echo 'DB Connection Error: '.$e->getMessage();
+      return null;
     }
   }
 }
-?>

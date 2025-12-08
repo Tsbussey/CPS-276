@@ -1,19 +1,13 @@
 <?php
-declare(strict_types=1);
+// Minimal: keep all links visible; only remove underlines.
+if (session_status() === PHP_SESSION_NONE) { session_start(); }
+
 function nav_links(): string {
-  $links = [];
-  $status = $_SESSION['user']['status'] ?? null;
-  if ($status) {
-    $links[] = ['Add Contact', 'addContact'];
-    $links[] = ['Delete Contact(s)', 'deleteContacts'];
-    if ($status === 'admin') { $links[] = ['Add Admin', 'addAdmin']; $links[] = ['Delete Admin(s)', 'deleteAdmins']; }
-    $links[] = ['Logout', 'logout'];
-  }
-  ob_start(); ?>
-  <nav class="mb-3">
-    <?php foreach ($links as [$label,$page]): ?>
-      <a class="me-3" href="index.php?page=<?= $page ?>"><?= htmlspecialchars($label) ?></a>
-    <?php endforeach; ?>
-  </nav>
-  <?php return ob_get_clean();
+  return implode(' &nbsp; ', [
+    '<a style="text-decoration:none" href="index.php?page=addContact">Add Contact</a>',
+    '<a style="text-decoration:none" href="index.php?page=deleteContacts">Delete Contact(s)</a>',
+    '<a style="text-decoration:none" href="index.php?page=addAdmin">Add Admin</a>',
+    '<a style="text-decoration:none" href="index.php?page=deleteAdmins">Delete Admin(s)</a>',
+    '<a style="text-decoration:none" href="logout.php">Logout</a>',
+  ]);
 }
