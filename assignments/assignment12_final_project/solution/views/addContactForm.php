@@ -11,56 +11,180 @@ require_once __DIR__ . '/../controllers/addContactProc.php';
 $sticky = new StickyForm();
 
 /* Bootstrap helpers */
-$inp = ['class'=>'form-control','labelClass'=>'form-label'];
-$sel = ['class'=>'form-select','labelClass'=>'form-label'];
+$inp = ['class' => 'form-control', 'labelClass' => 'form-label'];
+$sel = ['class' => 'form-select',  'labelClass' => 'form-label'];
 
 $formConfig = [
-  'masterStatus' => ['error'=>false],
+  'masterStatus' => ['error' => false],
 
-  'fname'   => ['type'=>'text','regex'=>'name','label'=>'First Name','name'=>'fname','id'=>'fname','required'=>true,'value'=>'','error'=>''] + $inp,
-  'lname'   => ['type'=>'text','regex'=>'name','label'=>'Last Name','name'=>'lname','id'=>'lname','required'=>true,'value'=>'','error'=>''] + $inp,
-  'address' => ['type'=>'text','regex'=>'address','label'=>'Address','name'=>'address','id'=>'address','required'=>true,'value'=>'','error'=>''] + $inp,
-  'city'    => ['type'=>'text','regex'=>'name','label'=>'City','name'=>'city','id'=>'city','required'=>true,'value'=>'','error'=>''] + $inp,
+  // TEXT INPUTS WITH CUSTOM ERROR MESSAGES
+  'fname' => [
+    'type'      => 'text',
+    'regex'     => 'name',
+    'label'     => 'First Name',
+    'name'      => 'fname',
+    'id'        => 'fname',
+    'required'  => true,
+    'value'     => '',
+    'error'     => '',
+    'errorMsg'  => 'You must enter a valid first name'
+  ] + $inp,
 
-  'zip'     => ['type'=>'text','regex'=>'zip','label'=>'Zip Code','name'=>'zip','id'=>'zip','required'=>true,'value'=>'','error'=>''] + $inp,
+  'lname' => [
+    'type'      => 'text',
+    'regex'     => 'name',
+    'label'     => 'Last Name',
+    'name'      => 'lname',
+    'id'        => 'lname',
+    'required'  => true,
+    'value'     => '',
+    'error'     => '',
+    'errorMsg'  => 'You must enter a valid last name'
+  ] + $inp,
 
-  'phone'   => ['type'=>'text','regex'=>'phone','label'=>'Phone','name'=>'phone','id'=>'phone','required'=>true,'value'=>'','error'=>'','placeholder'=>'999.999.9999'] + $inp,
-  'email'   => ['type'=>'text','regex'=>'email','label'=>'Email','name'=>'email','id'=>'email','required'=>true,'value'=>'','error'=>''] + $inp,
-  'dob'     => ['type'=>'text','regex'=>'dob','label'=>'Date of Birth','name'=>'dob','id'=>'dob','required'=>true,'value'=>'','error'=>'','placeholder'=>'mm/dd/yyyy'] + $inp,
+  'address' => [
+    'type'      => 'text',
+    'regex'     => 'address',
+    'label'     => 'Address',
+    'name'      => 'address',
+    'id'        => 'address',
+    'required'  => true,
+    'value'     => '',
+    'error'     => '',
+    'errorMsg'  => 'You must enter a valid address'
+  ] + $inp,
 
-  'state'   => [
-    'type'=>'select','label'=>'State','name'=>'state','id'=>'state','required'=>true,'selected'=>'','error'=>'',
-    'options'=>[
-      ''=>'Please Select','Michigan'=>'Michigan','Ohio'=>'Ohio','Indiana'=>'Indiana','Illinois'=>'Illinois','Wisconsin'=>'Wisconsin'
+  'city' => [
+    'type'      => 'text',
+    'regex'     => 'name',
+    'label'     => 'City',
+    'name'      => 'city',
+    'id'        => 'city',
+    'required'  => true,
+    'value'     => '',
+    'error'     => '',
+    'errorMsg'  => 'You must enter a valid city'
+  ] + $inp,
+
+  // ZIP must exist end-to-end
+  'zip' => [
+    'type'      => 'text',
+    'regex'     => 'zip',
+    'label'     => 'Zip Code',
+    'name'      => 'zip',
+    'id'        => 'zip',
+    'required'  => true,
+    'value'     => '',
+    'error'     => '',
+    'errorMsg'  => 'You must enter a valid zip code'
+  ] + $inp,
+
+  'phone' => [
+    'type'      => 'text',
+    'regex'     => 'phone',
+    'label'     => 'Phone',
+    'name'      => 'phone',
+    'id'        => 'phone',
+    'required'  => true,
+    'value'     => '',
+    'error'     => '',
+    'placeholder' => '999.999.9999',
+    'errorMsg'  => 'You must enter a valid phone number'
+  ] + $inp,
+
+  'email' => [
+    'type'      => 'text',
+    'regex'     => 'email',
+    'label'     => 'Email',
+    'name'      => 'email',
+    'id'        => 'email',
+    'required'  => true,
+    'value'     => '',
+    'error'     => '',
+    'errorMsg'  => 'You must enter a valid email address'
+  ] + $inp,
+
+  'dob' => [
+    'type'      => 'text',
+    'regex'     => 'dob',
+    'label'     => 'Date of Birth',
+    'name'      => 'dob',
+    'id'        => 'dob',
+    'required'  => true,
+    'value'     => '',
+    'error'     => '',
+    'placeholder' => 'mm/dd/yyyy',
+    'errorMsg'  => 'You must enter a valid date of birth'
+  ] + $inp,
+
+  // STATE SELECT WITH CUSTOM MESSAGE
+  'state' => [
+    'type'      => 'select',
+    'label'     => 'State',
+    'name'      => 'state',
+    'id'        => 'state',
+    'required'  => true,
+    'selected'  => '',
+    'error'     => '',
+    'errorMsg'  => 'You must select a state',
+    'options'   => [
+      ''          => 'Please Select',
+      'Michigan'  => 'Michigan',
+      'Ohio'      => 'Ohio',
+      'Indiana'   => 'Indiana',
+      'Illinois'  => 'Illinois',
+      'Wisconsin' => 'Wisconsin'
     ]
   ] + $sel,
 
-  // validate here; render manually
+  // AGE RADIO – VALIDATED HERE, RENDERED MANUALLY
   'age' => [
-    'type'=>'radio','label'=>'Choose an Age Range','name'=>'age','id'=>'age','required'=>true,'error'=>'',
-    'options'=>[
-      ['label'=>'0-17','value'=>'0-17','checked'=>false],
-      ['label'=>'18-30','value'=>'18-30','checked'=>false],
-      ['label'=>'30-50','value'=>'30-50','checked'=>false],
-      ['label'=>'50+','value'=>'50+','checked'=>false],
+    'type'      => 'radio',
+    'label'     => 'Choose an Age Range',
+    'name'      => 'age',
+    'id'        => 'age',
+    'required'  => true,
+    'error'     => '',
+    'errorMsg'  => 'You must select an age range',
+    'options'   => [
+      ['label' => '0-17',  'value' => '0-17',  'checked' => false],
+      ['label' => '18-30','value' => '18-30','checked' => false],
+      ['label' => '30-50','value' => '30-50','checked' => false],
+      ['label' => '50+',  'value' => '50+',  'checked' => false],
     ],
+    'inputClass' => 'form-check-input',
+    'labelClass' => 'form-check-label',
+    'groupClass' => 'form-check',
   ],
+
+  // CONTACT OPTIONS CHECKBOXES (NOT REQUIRED)
   'contact' => [
-    'type'=>'checkbox','label'=>'Select One or More Options','name'=>'contact','id'=>'contact','required'=>false,'error'=>'',
-    'options'=>[
-      ['label'=>'newsletter','value'=>'newsletter','checked'=>false],
-      ['label'=>'email','value'=>'email','checked'=>false],
-      ['label'=>'text','value'=>'text','checked'=>false],
+    'type'      => 'checkbox',
+    'label'     => 'Select One or More Options',
+    'name'      => 'contact',
+    'id'        => 'contact',
+    'required'  => false,
+    'error'     => '',
+    'errorMsg'  => '',
+    'options'   => [
+      ['label' => 'newsletter', 'value' => 'newsletter', 'checked' => false],
+      ['label' => 'email',      'value' => 'email',      'checked' => false],
+      ['label' => 'text',       'value' => 'text',       'checked' => false],
     ],
+    'inputClass' => 'form-check-input',
+    'labelClass' => 'form-check-label',
+    'groupClass' => 'form-check',
   ],
 ];
 
 $ack = null;
 $msg = null;
 
-/* Handle POST */
+/* Handle POST safely */
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $validated = $sticky->validateForm($_POST, $formConfig);
+
+  // Keep $formConfig an array
   if (is_array($validated)) {
     $formConfig = $validated;
   } else {
@@ -70,8 +194,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
   if (!$sticky->hasErrors() && $formConfig['masterStatus']['error'] == false) {
     $contactsSelected = [];
-    if (isset($_POST['contact']) && is_array($_POST['contact'])) {
-      $contactsSelected = $_POST['contact'];
+    foreach ($formConfig['contact']['options'] as $opt) {
+      if (!empty($opt['checked'])) {
+        $contactsSelected[] = $opt['value'];
+      }
     }
 
     $data = [
@@ -85,84 +211,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       'email'    => $formConfig['email']['value'],
       'dob'      => $formConfig['dob']['value'],
       'contacts' => implode(',', $contactsSelected),
-      'age'      => isset($_POST['age']) ? (string)$_POST['age'] : '',
+      'age'      => array_values(array_filter(array_map(
+                      fn($o) => !empty($o['checked']) ? $o['value'] : null,
+                      $formConfig['age']['options']
+                    )))[0] ?? '',
     ];
 
     $res = insert_contact($data);
     if ($res === 'noerror') {
-      // Success text
       $ack = 'Contact Added';
-
-      // Wipe radios/checkboxes: clear POST and force options unchecked
-      unset($_POST['age'], $_POST['contact']);
-
-      if (isset($formConfig['age']['options']) && is_array($formConfig['age']['options'])) {
-        foreach ($formConfig['age']['options'] as &$o) { if (is_array($o)) $o['checked'] = false; }
-        unset($o);
-      }
-      if (isset($formConfig['contact']['options']) && is_array($formConfig['contact']['options'])) {
-        foreach ($formConfig['contact']['options'] as &$o) { if (is_array($o)) $o['checked'] = false; }
-        unset($o);
-      }
     } else {
       $msg = 'There was an error adding the record';
     }
   }
 }
 
-/* SAFE BUILDERS – never index into strings */
-function build_age_options(array $formConfig): array {
-  $defaults = ['0-17','18-30','30-50','50+'];
-  $selected = $_POST['age'] ?? (
-    (isset($formConfig['age']) && is_array($formConfig['age']) && isset($formConfig['age']['selected']))
-      ? (string)$formConfig['age']['selected']
-      : ((isset($formConfig['age']) && is_string($formConfig['age'])) ? $formConfig['age'] : '')
-  );
-  return array_map(fn($v) => ['label'=>$v,'value'=>$v,'checked'=>($selected === $v)], $defaults);
-}
-function build_contact_options(array $formConfig): array {
-  $defaults = ['newsletter','email','text'];
-  $selected = [];
-  if (isset($_POST['contact']) && is_array($_POST['contact'])) {
-    $selected = $_POST['contact'];
-  } elseif (isset($formConfig['contact']) && is_array($formConfig['contact']) && isset($formConfig['contact']['selected'])) {
-    $sel = $formConfig['contact']['selected'];
-    $selected = is_array($sel) ? $sel : ($sel !== '' ? [$sel] : []);
-  } elseif (isset($formConfig['contact']) && is_string($formConfig['contact']) && $formConfig['contact'] !== '') {
-    $selected = [$formConfig['contact']];
-  }
-  return array_map(fn($v) => ['label'=>$v,'value'=>$v,'checked'=>in_array($v,$selected,true)], $defaults);
-}
-
+/* Render */
 render_page('Add Contact', function () use (&$sticky, &$formConfig, &$ack, &$msg) {
 
+  // On success, clear fields & selections (but keep error config)
   if ($ack) {
-    // Reset all simple fields
     foreach ($formConfig as $k => &$e) {
-      if ($k === 'masterStatus' || !is_array($e)) continue;
-      if (array_key_exists('value', $e))    $e['value']    = '';
-      if (array_key_exists('error', $e))    $e['error']    = '';
-      if (array_key_exists('selected', $e)) $e['selected'] = '';
-      if (array_key_exists('options', $e) && is_array($e['options'])) {
-        foreach ($e['options'] as $idx => &$o) {
-          if (is_array($o)) { $o['checked'] = false; }
+      if ($k === 'masterStatus') continue;
+      if (is_array($e)) {
+        if (isset($e['value']))    $e['value'] = '';
+        if (isset($e['error']))    $e['error'] = '';
+        if (isset($e['selected'])) $e['selected'] = '';
+        if (isset($e['options'])) {
+          foreach ($e['options'] as &$o) {
+            if (is_array($o) && isset($o['checked'])) {
+              $o['checked'] = false;
+            }
+          }
         }
-        unset($o);
       }
     }
-    unset($e);
   }
-
-  $ageOptions     = build_age_options($formConfig);
-  $contactOptions = build_contact_options($formConfig);
   ?>
 
   <?php if ($ack): ?>
-    <p class="mb-2"><?= htmlspecialchars($ack) ?></p>
+    <p><?= htmlspecialchars($ack) ?></p>
   <?php endif; ?>
 
   <?php if ($msg): ?>
-    <div class="alert alert-danger"><?= htmlspecialchars($msg) ?></div>
+    <p><?= htmlspecialchars($msg) ?></p>
   <?php endif; ?>
 
   <h1 class="mb-3">Add Contact</h1>
@@ -182,19 +274,29 @@ render_page('Add Contact', function () use (&$sticky, &$formConfig, &$ack, &$msg
       <div class="col-md-5"><?= $sticky->renderInput($formConfig['email']); ?></div>
       <div class="col-md-3"><?= $sticky->renderInput($formConfig['dob']); ?></div>
 
-      <!-- Age (manual inline Bootstrap) -->
+      <!-- Age (inline radios + right-side error) -->
       <div class="col-12">
         <label class="form-label d-block">Choose an Age Range</label>
-        <div class="d-flex flex-wrap">
-          <?php foreach ($ageOptions as $i => $opt):
-            $id = 'age_' . $i; $checked = !empty($opt['checked']) ? 'checked' : '';
-          ?>
-            <div class="form-check form-check-inline d-flex align-items-center me-4 mb-0">
-              <input class="form-check-input" type="radio" name="age" id="<?= $id ?>"
-                     value="<?= htmlspecialchars($opt['value']) ?>" <?= $checked ?>>
-              <label class="form-check-label ms-2 mb-0" for="<?= $id ?>"><?= htmlspecialchars($opt['label']) ?></label>
-            </div>
-          <?php endforeach; ?>
+        <div class="d-flex align-items-center flex-wrap">
+          <!-- radios -->
+          <div class="d-flex flex-wrap">
+            <?php foreach ($formConfig['age']['options'] as $i => $opt):
+              $id = 'age_' . $i;
+              $checked = !empty($opt['checked']) ? 'checked' : '';
+            ?>
+              <div class="form-check form-check-inline d-flex align-items-center me-4 mb-0">
+                <input class="form-check-input" type="radio" name="age" id="<?= $id ?>"
+                       value="<?= htmlspecialchars($opt['value']) ?>" <?= $checked ?>>
+                <label class="form-check-label ms-2 mb-0" for="<?= $id ?>"><?= htmlspecialchars($opt['label']) ?></label>
+              </div>
+            <?php endforeach; ?>
+          </div>
+
+          <?php if (!empty($formConfig['age']['error'])): ?>
+            <span class="text-danger small ms-3 flex-shrink-0" style="white-space:nowrap;">
+              <?= htmlspecialchars($formConfig['age']['error']) ?>
+            </span>
+          <?php endif; ?>
         </div>
       </div>
 
@@ -202,8 +304,9 @@ render_page('Add Contact', function () use (&$sticky, &$formConfig, &$ack, &$msg
       <div class="col-12">
         <label class="form-label d-block">Select One or More Options</label>
         <div class="d-flex flex-wrap">
-          <?php foreach ($contactOptions as $i => $opt):
-            $id = 'contact_' . $i; $checked = !empty($opt['checked']) ? 'checked' : '';
+          <?php foreach ($formConfig['contact']['options'] as $i => $opt):
+            $id = 'contact_' . $i;
+            $checked = !empty($opt['checked']) ? 'checked' : '';
           ?>
             <div class="form-check form-check-inline d-flex align-items-center me-4 mb-0">
               <input class="form-check-input" type="checkbox" name="contact[]" id="<?= $id ?>"
@@ -212,6 +315,9 @@ render_page('Add Contact', function () use (&$sticky, &$formConfig, &$ack, &$msg
             </div>
           <?php endforeach; ?>
         </div>
+        <?php if (!empty($formConfig['contact']['error'])): ?>
+          <div class="text-danger small mt-1"><?= htmlspecialchars($formConfig['contact']['error']) ?></div>
+        <?php endif; ?>
       </div>
 
       <div class="col-12">
@@ -219,4 +325,5 @@ render_page('Add Contact', function () use (&$sticky, &$formConfig, &$ack, &$msg
       </div>
     </div>
   </form>
+
 <?php });
