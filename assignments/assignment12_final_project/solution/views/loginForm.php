@@ -23,9 +23,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 render_page('Login', function () use ($msg) { ?>
   <h1 class="mb-3">Login</h1>
 
-  <?php if (!empty($msg)): ?>
-    <div class="alert alert-warning"><?= htmlspecialchars($msg) ?></div>
-  <?php endif; ?>
+  <?php if ($msg): ?>
+  <p><?= htmlspecialchars($msg) ?></p>
+<?php endif; ?>
 
   <form method="post" novalidate>
     <div class="mb-3">
