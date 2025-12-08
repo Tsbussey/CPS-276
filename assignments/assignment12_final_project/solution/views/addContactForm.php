@@ -16,8 +16,8 @@ $sel  = ['class'=>'form-select',  'labelClass'=>'form-label'];
 $rChk = [
   'inputClass'   => 'form-check-input',
   'labelClass'   => 'form-check-label',
-  'groupClass'   => 'form-check',                   // StickyForm may ignore "inline"; we'll force inline at render
-  'inlineGroup'  => 'form-check form-check-inline',
+  'groupClass'   => 'form-check',                   // not used in manual markup
+  'inlineGroup'  => 'form-check form-check-inline', // not used in manual markup
 ];
 
 $formConfig = [
@@ -45,7 +45,7 @@ $formConfig = [
     ]
   ] + $sel,
 
-  // radios (we’ll force inline at render)
+  // radios (config used for validation; we render manually)
   'age'     => [
     'type'=>'radio','label'=>'Choose an Age Range','name'=>'age','id'=>'age','required'=>true,'error'=>'',
     'options'=>[
@@ -59,7 +59,7 @@ $formConfig = [
     'groupClass'  => $rChk['groupClass'],
   ],
 
-  // checkboxes (we’ll force inline at render)
+  // checkboxes (config used for validation; we render manually)
   'contact' => [
     'type'=>'checkbox','label'=>'Select One or More Options','name'=>'contact','id'=>'contact','required'=>false,'error'=>'',
     'options'=>[
@@ -156,31 +156,43 @@ render_page('Add Contact', function () use (&$sticky, &$formConfig, &$ack, &$msg
       <div class="col-md-5"><?= $sticky->renderInput($formConfig['email']); ?></div>
       <div class="col-md-3"><?= $sticky->renderInput($formConfig['dob']); ?></div>
 
-      <!-- Age (inline, label aligned) -->
+      <!-- Age (manual horizontal Bootstrap markup) -->
       <div class="col-12">
+        <label class="form-label d-block">Choose an Age Range</label>
         <div class="d-flex flex-wrap">
-          <?php
-            $ageHtml = $sticky->renderRadio($formConfig['age']);
-            // Make each wrapper inline + vertically centered + spaced
-            $ageHtml = str_replace('form-check"', 'form-check form-check-inline d-flex align-items-center me-4 mb-0"', $ageHtml);
-            // Move label closer to the control and remove bottom margin
-            $ageHtml = str_replace('form-check-label"', 'form-check-label ms-2 mb-0"', $ageHtml);
-            echo $ageHtml;
+          <?php foreach ($formConfig['age']['options'] as $i => $opt):
+            $id = 'age_' . $i;
+            $checked = !empty($opt['checked']) ? 'checked' : '';
           ?>
+            <div class="form-check form-check-inline d-flex align-items-center me-4 mb-0">
+              <input class="form-check-input" type="radio"
+                     name="age" id="<?= $id ?>"
+                     value="<?= htmlspecialchars($opt['value']) ?>" <?= $checked ?>>
+              <label class="form-check-label ms-2 mb-0" for="<?= $id ?>">
+                <?= htmlspecialchars($opt['label']) ?>
+              </label>
+            </div>
+          <?php endforeach; ?>
         </div>
       </div>
 
-      <!-- Contact options (inline, label aligned) -->
+      <!-- Contact options (manual horizontal Bootstrap markup) -->
       <div class="col-12">
+        <label class="form-label d-block">Select One or More Options</label>
         <div class="d-flex flex-wrap">
-          <?php
-            $contactHtml = $sticky->renderCheckboxGroup($formConfig['contact']);
-            // Make each wrapper inline + vertically centered + spaced
-            $contactHtml = str_replace('form-check"', 'form-check form-check-inline d-flex align-items-center me-4 mb-0"', $contactHtml);
-            // Move label closer to the control and remove bottom margin
-            $contactHtml = str_replace('form-check-label"', 'form-check-label ms-2 mb-0"', $contactHtml);
-            echo $contactHtml;
+          <?php foreach ($formConfig['contact']['options'] as $i => $opt):
+            $id = 'contact_' . $i;
+            $checked = !empty($opt['checked']) ? 'checked' : '';
           ?>
+            <div class="form-check form-check-inline d-flex align-items-center me-4 mb-0">
+              <input class="form-check-input" type="checkbox"
+                     name="contact[]" id="<?= $id ?>"
+                     value="<?= htmlspecialchars($opt['value']) ?>" <?= $checked ?>>
+              <label class="form-check-label ms-2 mb-0" for="<?= $id ?>">
+                <?= htmlspecialchars($opt['label']) ?>
+              </label>
+            </div>
+          <?php endforeach; ?>
         </div>
       </div>
 
