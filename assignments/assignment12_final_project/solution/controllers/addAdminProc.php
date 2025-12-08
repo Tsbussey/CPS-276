@@ -1,18 +1,46 @@
 <?php
-declare(strict_types=1);
-
+// ==============================
+// file: solution/controllers/addAdminProc.php
+// ==============================
 set_include_path(__DIR__ . '/../classes' . PATH_SEPARATOR . get_include_path());
 require_once __DIR__ . '/../classes/Pdo_methods.php';
 
-function insert_admin(string $name, string $email, string $hash, string $status): string {
+/**
+ * Add an admin.
+ * Returns:
+ *   - 'noerror'   on success
+ *   - 'duplicate' if email already exists
+ *   - 'dberror'   if a DB error occurs
+ */
+function add_admin(array $data) {
   $pdo = new PdoMethods();
-  $sql = "INSERT INTO admins (name,email,password,status) VALUES (:name,:email,:password,:status)";
-  return $pdo->otherBinded($sql, [
-    [":name",$name,"str"],[":email",$email,"str"],[":password",$hash,"str"],[":status",$status,"str"]
-  ]);
+
+  // 1) Duplicate by email?
+  $dupSql = "SELECT id FROM admins WHERE email = :email LIMIT 1";
+  $dup = $pdo->selectBinded($dupSql, [[":email", $data['email'], "str"]]);
+  if ($dup === 'error') { return 'dberror'; }
+  if ($dup && count($dup) > 0) { return 'duplicate'; }
+
+  // 2) Insert new admin (hash password)
+  $insSql = "INSERT INTO admins (fname, lname, email, password, status)
+             VALUES (:fname, :lname, :email, :password, :status)";
+  $bindings = [
+    [":fname",    $data['fname'],                      "str"],
+    [":lname",    $data['lname'],                      "str"],
+    [":email",    $data['email'],                      "str"],
+    [":password", password_hash($data['password'], PASSWORD_DEFAULT), "str"],
+    [":status",   $data['status'],                     "str"],
+  ];
+  return $pdo->otherBinded($insSql, $bindings); // returns 'noerror' on success
 }
-function email_exists(string $email): bool {
+
+/** List all admins for Delete Admin(s) page */
+function list_admins() {
   $pdo = new PdoMethods();
-  $res = $pdo->selectBinded("SELECT id FROM admins WHERE email = :email", [[":email",$email,"str"]]);
-  return $res !== 'error' && count($res) > 0;
+  $sql = "SELECT id, fname, lname, email, status
+          FROM admins
+          ORDER BY lname, fname";
+  $rows = $pdo->selectNotBinded($sql);
+  if ($rows === 'error' || $rows === null) return [];
+  return $rows;
 }
