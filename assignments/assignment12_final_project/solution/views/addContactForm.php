@@ -16,7 +16,7 @@ $sel  = ['class'=>'form-select',  'labelClass'=>'form-label'];
 $rChk = [
   'inputClass'   => 'form-check-input',
   'labelClass'   => 'form-check-label',
-  'groupClass'   => 'form-check',
+  'groupClass'   => 'form-check',                   // StickyForm may ignore "inline"; we'll force inline at render
   'inlineGroup'  => 'form-check form-check-inline',
 ];
 
@@ -45,7 +45,7 @@ $formConfig = [
     ]
   ] + $sel,
 
-  // radios (inline)
+  // radios (we’ll force inline at render)
   'age'     => [
     'type'=>'radio','label'=>'Choose an Age Range','name'=>'age','id'=>'age','required'=>true,'error'=>'',
     'options'=>[
@@ -56,10 +56,10 @@ $formConfig = [
     ],
     'inputClass'  => $rChk['inputClass'],
     'labelClass'  => $rChk['labelClass'],
-    'groupClass'  => $rChk['inlineGroup'], // show horizontally
+    'groupClass'  => $rChk['groupClass'],
   ],
 
-  // checkboxes (inline)
+  // checkboxes (we’ll force inline at render)
   'contact' => [
     'type'=>'checkbox','label'=>'Select One or More Options','name'=>'contact','id'=>'contact','required'=>false,'error'=>'',
     'options'=>[
@@ -69,7 +69,7 @@ $formConfig = [
     ],
     'inputClass'  => $rChk['inputClass'],
     'labelClass'  => $rChk['labelClass'],
-    'groupClass'  => $rChk['inlineGroup'], // show horizontally
+    'groupClass'  => $rChk['groupClass'],
   ],
 ];
 
@@ -82,9 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   if (!$sticky->hasErrors() && $formConfig['masterStatus']['error'] == false) {
     $contactsSelected = [];
     foreach ($formConfig['contact']['options'] as $opt) {
-      if ($opt['checked']) {
-        $contactsSelected[] = $opt['value'];
-      }
+      if ($opt['checked']) { $contactsSelected[] = $opt['value']; }
     }
 
     $data = [
@@ -105,15 +103,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $res = insert_contact($data);
 
-    if ($res === 'noerror') {
-      $ack = 'Contact Information Added';
-    } else {
-      $msg = 'There was an error adding the record';
-    }
+    if ($res === 'noerror') { $ack = 'Contact Information Added'; }
+    else { $msg = 'There was an error adding the record'; }
   }
 }
 
-render_page('Add Contact', function () use ($sticky, &$formConfig, $ack, $msg) {
+render_page('Add Contact', function () use (&$sticky, &$formConfig, &$ack, &$msg) {
 
   if ($ack) {
     foreach ($formConfig as $k => &$e) {
@@ -121,29 +116,13 @@ render_page('Add Contact', function () use ($sticky, &$formConfig, $ack, $msg) {
       $e['value'] = '';
       $e['error'] = '';
       if (isset($e['selected'])) $e['selected'] = '';
-      if (isset($e['options'])) {
-        foreach ($e['options'] as &$o) {
-          $o['checked'] = false;
-        }
-      }
+      if (isset($e['options'])) { foreach ($e['options'] as &$o) { $o['checked'] = false; } }
     }
   }
   ?>
-  <style>
-    /* Keep radios/checkboxes horizontal and nicely spaced */
-    .inline-options > * {
-      display: inline-block;
-      margin-right: 1rem;
-    }
-  </style>
 
-  <?php if ($ack): ?>
-    <div class="alert alert-success"><?= $ack ?></div>
-  <?php endif; ?>
-
-  <?php if ($msg): ?>
-    <div class="alert alert-danger"><?= $msg ?></div>
-  <?php endif; ?>
+  <?php if ($ack): ?><div class="alert alert-success"><?= $ack ?></div><?php endif; ?>
+  <?php if ($msg): ?><div class="alert alert-danger"><?= $msg ?></div><?php endif; ?>
 
   <h1 class="mb-3">Add Contact</h1>
 
@@ -177,15 +156,31 @@ render_page('Add Contact', function () use ($sticky, &$formConfig, $ack, $msg) {
       <div class="col-md-5"><?= $sticky->renderInput($formConfig['email']); ?></div>
       <div class="col-md-3"><?= $sticky->renderInput($formConfig['dob']); ?></div>
 
+      <!-- Age (inline, label aligned) -->
       <div class="col-12">
-        <div class="inline-options">
-          <?= $sticky->renderRadio($formConfig['age']); ?>
+        <div class="d-flex flex-wrap">
+          <?php
+            $ageHtml = $sticky->renderRadio($formConfig['age']);
+            // Make each wrapper inline + vertically centered + spaced
+            $ageHtml = str_replace('form-check"', 'form-check form-check-inline d-flex align-items-center me-4 mb-0"', $ageHtml);
+            // Move label closer to the control and remove bottom margin
+            $ageHtml = str_replace('form-check-label"', 'form-check-label ms-2 mb-0"', $ageHtml);
+            echo $ageHtml;
+          ?>
         </div>
       </div>
 
+      <!-- Contact options (inline, label aligned) -->
       <div class="col-12">
-        <div class="inline-options">
-          <?= $sticky->renderCheckboxGroup($formConfig['contact']); ?>
+        <div class="d-flex flex-wrap">
+          <?php
+            $contactHtml = $sticky->renderCheckboxGroup($formConfig['contact']);
+            // Make each wrapper inline + vertically centered + spaced
+            $contactHtml = str_replace('form-check"', 'form-check form-check-inline d-flex align-items-center me-4 mb-0"', $contactHtml);
+            // Move label closer to the control and remove bottom margin
+            $contactHtml = str_replace('form-check-label"', 'form-check-label ms-2 mb-0"', $contactHtml);
+            echo $contactHtml;
+          ?>
         </div>
       </div>
 
