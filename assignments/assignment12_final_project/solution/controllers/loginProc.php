@@ -19,7 +19,7 @@ if (class_exists('PdoMethods') && !class_exists('Pdo_methods')) {
 }
 
 function handle_login(array $post): array {
-  echo'handle_login';
+  // echo'handle_login';
 
   $email = trim($post['email'] ?? '');
   $pass  = (string)($post['password'] ?? '');
