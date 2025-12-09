@@ -123,4 +123,10 @@ Shared layout wrapper
 
 // require $allowed[$page];  // hands control to the target view
 
-*/
+
+// require_once __DIR__ . '/../controllers/loginProc.php';
+// $result = handle_login($_POST);   // controller does DB & session
+
+// Click link → router picks view via $allowed → view optionally calls controller (DB) → HTML rendered through render_page().
+
+// */
