@@ -44,5 +44,5 @@ if ($display === '') { $display = 'User'; }
 
 render_page('Welcome Page', function () use ($display) { ?>
   <h1 class="mb-3">Welcome Page</h1>
-  <p>Welcome <?= htmlspecialchars($display) ?></p>
+  <p>Welcome <?php echo $_SESSION['name']  ?></p>
 <?php });

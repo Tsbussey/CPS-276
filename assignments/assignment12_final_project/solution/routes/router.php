@@ -1,4 +1,7 @@
 <?php
+//  var_dump($_SESSION);
+
+
 // ==============================
 // file: solution/routes/router.php
 // ==============================
@@ -9,14 +12,15 @@ $allowed = [
   'deleteContacts' => __DIR__ . '/../views/deleteContactTable.php',
   'addAdmin'       => __DIR__ . '/../views/addAdminForm.php',
   'deleteAdmins'   => __DIR__ . '/../views/deleteAdminsTable.php',
-  'logout'         => __DIR__ . '/../views/logout.php',
+  'logout'         => __DIR__ . '/logout.php',
 ];
+
 $page = $_GET['page'] ?? 'login';
+
 if (!isset($allowed[$page])) { header('Location: index.php?page=login'); exit; }
 
 require_once __DIR__ . '/../includes/security.php';
 require_once __DIR__ . '/../includes/navigation.php';
-
 
 
 function render_page($title, $contentFn) { ?>
@@ -35,5 +39,6 @@ function render_page($title, $contentFn) { ?>
   </div>
 </body>
 </html>
-<?php }
+<?php 
+}
 require $allowed[$page];

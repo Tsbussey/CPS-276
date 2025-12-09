@@ -3,6 +3,10 @@
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 
 function nav_links(): string {
+  
+  if ($_SESSION['role']=='admin') {
+
+  
   return implode(' &nbsp; ', [
     '<a style="text-decoration:none" href="index.php?page=addContact">Add Contact</a>',
     '<a style="text-decoration:none" href="index.php?page=deleteContacts">Delete Contact(s)</a>',
@@ -10,4 +14,14 @@ function nav_links(): string {
     '<a style="text-decoration:none" href="index.php?page=deleteAdmins">Delete Admin(s)</a>',
     '<a style="text-decoration:none" href="logout.php">Logout</a>',
   ]);
+}
+elseif ($_SESSION['role']=='staff'){
+  return implode(' &nbsp; ', [
+    '<a style="text-decoration:none" href="index.php?page=addContact">Add Contact</a>',
+    '<a style="text-decoration:none" href="index.php?page=deleteContacts">Delete Contact(s)</a>',
+    '<a style="text-decoration:none" href="logout.php">Logout</a>',
+  ]);
+
+
+}
 }

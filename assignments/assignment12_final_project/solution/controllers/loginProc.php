@@ -2,12 +2,24 @@
 // ==============================
 // file: solution/controllers/loginProc.php
 // ==============================
+
+// make sure PHP can see the classes folder
 set_include_path(__DIR__ . '/../classes' . PATH_SEPARATOR . get_include_path());
+
+// load the PDO wrapper (book file name: Pdo_methods.php)
 require_once __DIR__ . '/../classes/Pdo_methods.php';
 
+/**
+ * Compatibility shim:
+ * If the class inside Pdo_methods.php is named PdoMethods (camel case),
+ * create an alias so code that expects Pdo_methods still works.
+ */
+if (class_exists('PdoMethods') && !class_exists('Pdo_methods')) {
+  class_alias('PdoMethods', 'Pdo_methods');
+}
+
 function handle_login(array $post): array {
-  $msg = '';
-  $ok  = false;
+  echo'handle_login';
 
   $email = trim($post['email'] ?? '');
   $pass  = (string)($post['password'] ?? '');
@@ -16,13 +28,16 @@ function handle_login(array $post): array {
     return ['ok' => false, 'msg' => 'Login credentials incorrect'];
   }
 
-  $pdo = new PdoMethods();
-  // Your admins table uses: id, fname, lname, email, password, status
+  // Use the book’s PDO class (works whether the actual class is Pdo_methods or PdoMethods)
+  $pdo = new Pdo_methods();
+
+  // Your admins table fields: id, fname, lname, email, password, status
   $sql = "SELECT id, fname, lname, email, password, status
           FROM admins
           WHERE email = :email
           LIMIT 1";
-  $rows = $pdo->selectBinded($sql, [[":email",$email,"str"]]);
+
+  $rows = $pdo->selectBinded($sql, [[":email", $email, "str"]]);
 
   if ($rows === 'error' || empty($rows)) {
     return ['ok' => false, 'msg' => 'Login credentials incorrect'];
@@ -30,8 +45,7 @@ function handle_login(array $post): array {
 
   $row = $rows[0];
 
-  // If you stored plain text passwords for the assignment, compare directly.
-  // If you used password_hash(), keep the verify() line and remove the direct compare.
+  // Accept either hashed or plain for this assignment
   $passwordMatches =
       password_verify($pass, $row['password']) || $pass === $row['password'];
 
@@ -45,7 +59,8 @@ function handle_login(array $post): array {
   $_SESSION['uid']   = (int)$row['id'];
   $_SESSION['name']  = trim($row['fname'] . ' ' . $row['lname']);
   $_SESSION['email'] = $row['email'];
-  $_SESSION['role']  = $row['status']; // e.g., 'admin' or 'staff'
+  $_SESSION['role']  = $row['status']; // 'admin' or 'staff'
+  $_SESSION['user'] = (int)$row['id'];
 
   return ['ok' => true, 'msg' => ''];
 }

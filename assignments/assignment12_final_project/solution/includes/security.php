@@ -7,5 +7,5 @@ function require_login() {
 }
 function require_admin() {
   require_login();
-  if (($_SESSION['user']['status'] ?? '') !== 'admin') { header('Location: index.php?page=login'); exit; }
+  if (($_SESSION['role'] ?? '') !== 'admin') { header('Location: index.php?page=login'); exit; }
 }
