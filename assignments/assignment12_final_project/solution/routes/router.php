@@ -17,6 +17,8 @@ if (!isset($allowed[$page])) { header('Location: index.php?page=login'); exit; }
 require_once __DIR__ . '/../includes/security.php';
 require_once __DIR__ . '/../includes/navigation.php';
 
+
+
 function render_page($title, $contentFn) { ?>
 <!doctype html>
 <html lang="en">
